@@ -356,34 +356,36 @@ app.post('/client/publish', async (req, res) => {
       const display = client.displays.find((d) => d.id === Number(displayId));
       if (display) {
         const displayName = display.name.replace(/\s+/g, '_');
-        const activeVideoPath = `user/videos/${clientName}/${displayName}/active_video.mp4`;
+        // const activeVideoPath = `belgrand-player/user/videos/${clientName}/active_video.mp4`;
+        const activeVideoPath = videoUrl;
 
         console.log(`Target Path: ${activeVideoPath}`);
 
         // Delete existing active video
-        try {
-          await s3.deleteObject({
-            Bucket: 'belgrand-player',
-            Key: activeVideoPath,
-          }).promise();
-          console.log(`Deleted existing active video: ${activeVideoPath}`);
-        } catch (deleteErr) {
-          console.log(`No active video to delete:`, deleteErr.message);
-        }
+        // try {
+        //   await s3.deleteObject({
+        //     Bucket: 'belgrand-player',
+        //     Key: activeVideoPath,
+        //   }).promise();
+        //   console.log(`Deleted existing active video: ${activeVideoPath}`);
+        // } catch (deleteErr) {
+        //   console.log(`No active video to delete:`, deleteErr.message);
+        // }
 
         // Copy video to active directory
-        const copyParams = {
-          Bucket: 'belgrand-player',
-          CopySource: encodeURIComponent(sourceKey),
-          Key: activeVideoPath,
-          ACL: 'public-read',
-        };
+        // const copyParams = {
+        //   Bucket: 'belgrand-player',
+        //   CopySource: encodeURIComponent(sourceKey),
+        //   Key: activeVideoPath,
+        //   ACL: 'public-read',
+        // };
 
-        await s3.copyObject(copyParams).promise();
-        console.log(`Copied video to: ${activeVideoPath}`);
+        // await s3.copyObject(copyParams).promise();
+        // console.log(`Copied video to: ${activeVideoPath}`);
 
         // Update display's videoLink
-        display.videoLink = `https://belgrand-player.nbg1.your-objectstorage.com/${activeVideoPath}`;
+        // display.videoLink = `https://belgrand-player.nbg1.your-objectstorage.com/${activeVideoPath}`;
+        display.videoLink = videoUrl;
       }
     }
 
@@ -394,6 +396,91 @@ app.post('/client/publish', async (req, res) => {
     res.status(500).send({ message: 'Failed to publish video.', error: error.message });
   }
 });
+
+// app.get('/client/getCurrentVideo/:clientId/:displayId', async (req, res) => {
+//   const { clientId, displayId } = req.params;
+
+//   // Čitanje klijentskog fajla
+//   const clients = readJson(clientFile);
+//   const client = clients.find((c) => c.id === Number(clientId));
+
+//   if (!client) {
+//     return res.status(404).send({ message: 'Client not found.' });
+//   }
+
+//   // Pronalaženje ekrana za zadati displayId
+//   const display = client.displays.find((d) => d.id === Number(displayId));
+
+//   if (!display || !display.videoLink) {
+//     return res.status(404).send({ message: 'Video for the specified display not found.' });
+//   }
+
+//   try {
+//     // Prilagođavanje sourceKey-a
+//     const videoUrl = display.videoLink;
+//     const sourceKey = videoUrl.replace('https://belgrand-player.nbg1.your-objectstorage.com/', '')
+//     console.log(`Fetching video with key: ${sourceKey}`); // Debugging
+
+//     console.log(`Client ID: ${clientId}`);
+//     console.log(`Display ID: ${displayId}`);
+//     console.log(`Video URL: ${videoUrl}`);
+//     console.log(`Generated Source Key: ${sourceKey}`);
+
+//     // Provera postojanja fajla na S3
+//     const headObject = await s3
+//       .headObject({
+//         Bucket: 'belgrand-player',
+//         Key: sourceKey,
+//       })
+//       .promise();
+
+//     // Postavljanje headera za video
+//     res.setHeader('Content-Type', headObject.ContentType || 'video/mp4');
+//     res.setHeader('Content-Length', headObject.ContentLength);
+//     res.setHeader('Last-Modified', headObject.LastModified);
+//     res.setHeader('ETag', headObject.ETag);
+
+//     // Slanje URL-a
+//     res.status(200).send({ videoUrl });
+//   } catch (error) {
+//     console.error('Error fetching video from S3:', error);
+//     res.status(500).send({ message: 'Failed to fetch video.', error: error.message });
+//   }
+// });
+
+app.get('/client/getCurrentVideo/:clientId/:displayId', async (req, res) => {
+  const { clientId, displayId } = req.params;
+
+  // Čitanje klijentskog fajla
+  const clients = readJson(clientFile);
+  const client = clients.find((c) => c.id === Number(clientId));
+
+  if (!client) {
+    return res.status(404).send({ message: 'Client not found.' });
+  }
+
+  // Pronalaženje ekrana za zadati displayId
+  const display = client.displays.find((d) => d.id === Number(displayId));
+
+  if (!display || !display.videoLink) {
+    return res.status(404).send({ message: 'Video for the specified display not found.' });
+  }
+
+  try {
+    const videoUrl = display.videoLink;
+
+    console.log(`Client ID: ${clientId}`);
+    console.log(`Display ID: ${displayId}`);
+    console.log(`Video URL: ${videoUrl}`);
+
+    // Redirektuj klijenta na direktan URL videa
+    res.status(302).redirect(videoUrl);
+  } catch (error) {
+    console.error('Error fetching video:', error);
+    res.status(500).send({ message: 'Failed to serve video.', error: error.message });
+  }
+});
+
 
 // Start the server
 const PORT = process.env.PORT || 3000;

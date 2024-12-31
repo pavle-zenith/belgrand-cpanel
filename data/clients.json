@@ -72,20 +72,22 @@
         "name": "marko",
         "location": "marko",
         "resolution": "marko",
-        "videoLink": "https://belgrand-player.nbg1.your-objectstorage.com/uploaded_video.mp4"
+        "videoLink": "https://belgrand-player.nbg1.your-objectstorage.com/belgrand-player/user/videos/ivan/1735619769360_es.mp4"
       },
       {
         "id": 1735402661002,
         "name": "TEST",
         "location": "test",
-        "resolution": "123x123"
+        "resolution": "123x123",
+        "videoLink": "https://belgrand-player.nbg1.your-objectstorage.com/belgrand-player/user/videos/ivan/1735619367972_es.mp4"
       }
     ],
     "videos": [
       "https://belgrand-player.nbg1.your-objectstorage.com/belgrand-player/user/videos/ivan/1735619367972_es.mp4",
       "https://belgrand-player.nbg1.your-objectstorage.com/belgrand-player/user/videos/ivan/1735619769360_es.mp4",
       "https://belgrand-player.nbg1.your-objectstorage.com/belgrand-player/user/videos/ivan/1735620209693_aaaa.mp4",
-      "https://belgrand-player.nbg1.your-objectstorage.com/belgrand-player/user/videos/ivan/1735620470820_aaaa.mp4"
+      "https://belgrand-player.nbg1.your-objectstorage.com/belgrand-player/user/videos/ivan/1735620470820_aaaa.mp4",
+      "https://belgrand-player.nbg1.your-objectstorage.com/belgrand-player/user/videos/ivan/1735640670963_aaaa.mp4"
     ]
   },
   {
