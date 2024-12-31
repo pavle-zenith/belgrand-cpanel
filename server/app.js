@@ -340,16 +340,16 @@ app.post('/client/publish', async (req, res) => {
     console.log(`Corrected Source Key: ${sourceKey}`);
 
     // Check if source key exists
-    try {
-      const headObject = await s3.headObject({
-        Bucket: 'belgrand-player',
-        Key: sourceKey,
-      }).promise();
-      console.log('Source file exists:', headObject);
-    } catch (err) {
-      console.error('Source file does not exist:', err.message);
-      return res.status(404).send({ message: 'Source video does not exist.' });
-    }
+    // try {
+    //   const headObject = await s3.headObject({
+    //     Bucket: 'belgrand-player',
+    //     Key: sourceKey,
+    //   }).promise();
+    //   console.log('Source file exists:', headObject);
+    // } catch (err) {
+    //   console.error('Source file does not exist:', err.message);
+    //   return res.status(404).send({ message: 'Source video does not exist.' });
+    // }
 
     // Process each selected display
     for (const displayId of displays) {
