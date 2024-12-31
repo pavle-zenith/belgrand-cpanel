@@ -125,8 +125,11 @@
     <!-- Publish Video to Displays Panel -->
     <div class="panel">
       <h3>Publish Video to Displays</h3>
-      <div id="insertVideoName">
-        <p>No video uploaded yet.</p>
+      <div class="form-field">
+        <label for="videoDropdown">Select Video</label>
+        <select id="videoDropdown">
+          <option value="">Select a video</option>
+        </select>
       </div>
       <div id="displayCheckboxes">
         <p>Loading displays...</p>
@@ -146,11 +149,14 @@
 
   <script>
     const contentList = document.getElementById("contentList");
-    const insertVideoName = document.getElementById("insertVideoName");
+    const videoDropdown = document.getElementById("videoDropdown");
     const displayCheckboxes = document.getElementById("displayCheckboxes");
     const displayList = document.getElementById("displayList");
 
-    let uploadedVideoUrl = ""; // Store the uploaded video URL
+    const clientId = localStorage.getItem("clientId");
+    if (!clientId) {
+      alert("Client ID is missing.");
+    }
 
     // Handle Upload Button Click
     document.getElementById("uploadBtn").addEventListener("click", async () => {
@@ -162,55 +168,69 @@
         return;
       }
 
-      // Validate video duration
-      const video = document.createElement("video");
-      video.preload = "metadata";
-      video.src = URL.createObjectURL(file);
+      const formData = new FormData();
+      formData.append("video", file);
+      formData.append("clientId", clientId);
 
-      video.onloadedmetadata = async () => {
-        URL.revokeObjectURL(video.src);
-        const duration = video.duration;
+      const response = await fetch("/client/upload", {
+        method: "POST",
+        body: formData,
+      });
 
-        if (duration > 8) {
-          alert(
-            "The video duration exceeds 8 seconds. Please upload a shorter video."
-          );
-          return;
-        }
-
-        // Proceed with the upload if duration is valid
-        const formData = new FormData();
-        formData.append("video", file);
-
-        const response = await fetch("/client/upload", {
-          method: "POST",
-          body: formData,
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          uploadedVideoUrl = data.videoUrl; // Store the video URL
-          const videoName = file.name;
-
-          // Update Content Panel
-          contentList.innerHTML = `
-            <div class="list-item">
-              <i class="material-icons">play_arrow</i>${videoName}
-            </div>`;
-
-          // Update Display Insert Media Panel
-          insertVideoName.innerHTML = `
-            <div class="list-item">
-              <i class="material-icons">play_arrow</i>${videoName}
-            </div>`;
-
-          alert(`Video uploaded successfully! URL: ${data.videoUrl}`);
-        } else {
-          const error = await response.json();
-          alert(`Upload failed: ${error.message}`);
-        }
-      };
+      if (response.ok) {
+        alert("Video uploaded successfully!");
+        loadUserVideos();
+      } else {
+        const error = await response.json();
+        alert(`Upload failed: ${error.message}`);
+      }
     });
+
+    // Load User Videos into Dropdown
+    const loadUserVideos = async () => {
+  const response = await fetch(`/client/videos?clientId=${clientId}`);
+  if (!response.ok) {
+    console.error('Failed to load videos.');
+    return;
+  }
+
+  const videos = await response.json();
+  const contentList = document.getElementById('contentList');
+  const videoDropdown = document.getElementById('videoDropdown');
+
+  // Populate the content list
+  contentList.innerHTML = videos.length
+    ? videos
+        .map(
+          (video) =>
+            `<div class="list-item">
+              <span>${video.split('/').pop()}</span>
+              <button class="button copy-button" data-link="${video}">Copy Link</button>
+            </div>`
+        )
+        .join('')
+    : '<p>No videos uploaded yet.</p>';
+
+  // Populate the dropdown
+  videoDropdown.innerHTML = '<option value="">Select a video</option>';
+  videos.forEach((video) => {
+    const option = document.createElement('option');
+    option.value = video;
+    option.textContent = video.split('/').pop(); // Extract file name
+    videoDropdown.appendChild(option);
+  });
+
+  // Add copy functionality to each button
+  const copyButtons = document.querySelectorAll('.copy-button');
+  copyButtons.forEach((button) => {
+    button.addEventListener('click', (event) => {
+      const videoLink = event.target.getAttribute('data-link');
+      navigator.clipboard.writeText(videoLink).then(() => {
+        alert('Video link copied to clipboard!');
+      });
+    });
+  });
+};
 
     // Handle Publish Button Click
     document.getElementById("publishBtn").addEventListener("click", async () => {
@@ -218,19 +238,15 @@
         document.querySelectorAll("#displayCheckboxes input[type='checkbox']:checked")
       ).map((checkbox) => parseInt(checkbox.value, 10));
 
+      const selectedVideo = videoDropdown.value;
+
+      if (!selectedVideo) {
+        alert("Please select a video to publish.");
+        return;
+      }
+
       if (!selectedDisplays.length) {
         alert("Please select at least one display to publish the video.");
-        return;
-      }
-
-      if (!uploadedVideoUrl) {
-        alert("No video uploaded to publish.");
-        return;
-      }
-
-      const clientId = localStorage.getItem("clientId");
-      if (!clientId) {
-        alert("Client ID is missing.");
         return;
       }
 
@@ -240,7 +256,7 @@
         body: JSON.stringify({
           clientId,
           displays: selectedDisplays,
-          videoUrl: uploadedVideoUrl,
+          videoUrl: selectedVideo,
         }),
       });
 
@@ -254,12 +270,6 @@
 
     // Load Displays for the User
     const loadDisplays = async () => {
-      const clientId = localStorage.getItem("clientId");
-      if (!clientId) {
-        console.error("Client ID is missing.");
-        return;
-      }
-
       try {
         const response = await fetch(`/client/displays?clientId=${clientId}`);
         if (!response.ok) {
@@ -299,6 +309,7 @@
 
     // Initial Load
     loadDisplays();
+    loadUserVideos();
   </script>
 </body>
 </html>

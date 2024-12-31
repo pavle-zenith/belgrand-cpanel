@@ -75,6 +75,7 @@ const s3 = new AWS.S3({
 
 // Upload Video to S3
 const uploadToS3 = (filePath, bucket, key) => {
+  console.log(`Uploading file to S3. Bucket: ${bucket}, Key: ${key}`); // Debugging
   return new Promise((resolve, reject) => {
     fs.readFile(filePath, (err, data) => {
       if (err) return reject(err);
@@ -84,11 +85,12 @@ const uploadToS3 = (filePath, bucket, key) => {
           Bucket: bucket,
           Key: key,
           Body: data,
-          ACL: 'public-read', // Omogućava javni pristup fajlu
+          ACL: 'public-read',
           ContentType: 'video/mp4',
         },
         (err, data) => {
           if (err) return reject(err);
+          console.log(`Uploaded to S3: ${data.Location}`); // Debugging
           resolve(data.Location);
         }
       );
@@ -121,36 +123,6 @@ app.post('/auth/login', (req, res) => {
   }
 
   return res.status(401).send({ success: false, message: 'Invalid credentials' });
-});
-
-app.post("/client/publish", (req, res) => {
-  const { clientId, displays } = req.body;
-
-  if (!clientId || !displays || displays.length === 0) {
-    return res
-      .status(400)
-      .send({ message: "Client ID and at least one display are required." });
-  }
-
-  const clients = readJson(clientFile);
-  const client = clients.find((c) => c.id === Number(clientId));
-
-  if (!client) {
-    return res.status(404).send({ message: "Client not found." });
-  }
-
-  const videoUrl = `https://belgrand-player.nbg1.your-objectstorage.com/uploaded_video.mp4`;
-
-  // Update the link for selected displays
-  displays.forEach((displayId) => {
-    const display = client.displays.find((d) => d.id === displayId);
-    if (display) {
-      display.videoLink = videoUrl;
-    }
-  });
-
-  writeJson(clientFile, clients);
-  res.status(200).send({ message: "Video link successfully added to displays." });
 });
 
 app.get('/admin', (req, res) => {
@@ -203,28 +175,7 @@ app.post('/create-user', (req, res) => {
 });
 
 // API: Upload Video
-app.post('/client/upload', upload.single('video'), async (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).send({ message: 'No video file provided.' });
-    }
 
-    const inputPath = req.file.path;
-
-    // Use a fixed key for the uploaded video to ensure it replaces the old one
-    const bucketName = 'belgrand-player';
-    const keyName = `uploaded_video.mp4`; // Fixed key name for consistency
-
-    const fileUrl = await uploadToS3(inputPath, bucketName, keyName);
-
-    fs.unlinkSync(inputPath); // Remove temp file
-
-    return res.status(200).send({ message: 'Video uploaded successfully!', videoUrl: fileUrl });
-  } catch (error) {
-    console.error('Upload error:', error);
-    return res.status(500).send({ message: 'Failed to upload video.', error: error.message });
-  }
-});
 
 app.get('/client/displays', (req, res) => {
   const { clientId } = req.query;
@@ -284,6 +235,164 @@ app.get('/user-displays/:id', (req, res) => {
     return res.status(200).send(user.displays);
   }
   return res.status(404).send({ message: 'User not found' });
+});
+const getUserVideoDirectory = (clientName) => `user/videos/${clientName}`;
+const getActiveVideoPath = (clientName, displayName) =>
+  `user/videos/${clientName}/${displayName}/active_video.mp4`;
+
+// Upload Video to S3 under the correct directory
+app.post('/client/upload', upload.single('video'), async (req, res) => {
+  try {
+    const { clientId } = req.body;
+
+    if (!req.file || !clientId) {
+      return res.status(400).send({ message: 'Video file and Client ID are required.' });
+    }
+
+    const clients = readJson(clientFile);
+    const client = clients.find((c) => c.id === Number(clientId));
+
+    if (!client) {
+      return res.status(404).send({ message: 'Client not found.' });
+    }
+
+    const clientName = client.name.replace(/\s+/g, '_');
+    const videoDirectory = `user/videos/${clientName}/`;
+    const videoKey = `${videoDirectory}${Date.now()}_${req.file.originalname}`;
+
+    console.log(`Uploading to directory: ${videoDirectory}`);
+    console.log(`Full key: ${videoKey}`);
+
+    const fileUrl = await uploadToS3(req.file.path, 'belgrand-player', videoKey);
+    fs.unlinkSync(req.file.path);
+
+    // Save the uploaded video link to the client's JSON
+    if (!client.videos) {
+      client.videos = [];
+    }
+    client.videos.push(fileUrl);
+    writeJson(clientFile, clients);
+
+    res.status(200).send({ message: 'Video uploaded successfully!', videoUrl: fileUrl });
+  } catch (error) {
+    console.error('Upload error:', error);
+    res.status(500).send({ message: 'Failed to upload video.', error: error.message });
+  }
+});
+
+
+// Fetch Videos for a Client
+app.get('/client/videos', (req, res) => {
+  const { clientId } = req.query;
+
+  if (!clientId) {
+    return res.status(400).send({ message: 'Client ID is required.' });
+  }
+
+  const clients = readJson(clientFile);
+  const client = clients.find((c) => c.id === Number(clientId));
+
+  if (!client) {
+    return res.status(404).send({ message: 'Client not found.' });
+  }
+
+  // Return the list of video links
+  res.status(200).send(client.videos || []);
+});
+
+const makePublic = async (bucketName, key) => {
+  const params = {
+    Bucket: bucketName,
+    Key: key, // Directory or file to make public
+    ACL: 'public-read',
+  };
+
+  try {
+    await s3.putObjectAcl(params).promise();
+    console.log(`Successfully updated ACL for ${key}`);
+  } catch (error) {
+    console.error(`Error setting ACL for ${key}:`, error);
+  }
+};
+// Publish Video to a Display
+app.post('/client/publish', async (req, res) => {
+  const { clientId, displays, videoUrl } = req.body;
+
+  if (!clientId || !displays || !videoUrl) {
+    return res.status(400).send({ message: 'Client ID, displays, and video URL are required.' });
+  }
+
+  const clients = readJson(clientFile);
+  const client = clients.find((c) => c.id === Number(clientId));
+
+  if (!client) {
+    return res.status(404).send({ message: 'Client not found.' });
+  }
+
+  const clientName = client.name.replace(/\s+/g, '_');
+
+  try {
+    // Correct the source key by removing any extra prefix
+    const sourceKey = videoUrl
+      .replace('https://belgrand-player.nbg1.your-objectstorage.com/', '')
+      .replace('belgrand-player/', ''); // Handle any redundant prefixes
+
+    console.log(`Corrected Source Key: ${sourceKey}`);
+
+    // Check if source key exists
+    try {
+      const headObject = await s3.headObject({
+        Bucket: 'belgrand-player',
+        Key: sourceKey,
+      }).promise();
+      console.log('Source file exists:', headObject);
+    } catch (err) {
+      console.error('Source file does not exist:', err.message);
+      return res.status(404).send({ message: 'Source video does not exist.' });
+    }
+
+    // Process each selected display
+    for (const displayId of displays) {
+      const display = client.displays.find((d) => d.id === Number(displayId));
+      if (display) {
+        const displayName = display.name.replace(/\s+/g, '_');
+        const activeVideoPath = `user/videos/${clientName}/${displayName}/active_video.mp4`;
+
+        console.log(`Target Path: ${activeVideoPath}`);
+
+        // Delete existing active video
+        try {
+          await s3.deleteObject({
+            Bucket: 'belgrand-player',
+            Key: activeVideoPath,
+          }).promise();
+          console.log(`Deleted existing active video: ${activeVideoPath}`);
+        } catch (deleteErr) {
+          console.log(`No active video to delete:`, deleteErr.message);
+        }
+
+        // Copy video to active directory
+        const copyParams = {
+          Bucket: 'belgrand-player',
+          CopySource: encodeURIComponent(sourceKey),
+          Key: activeVideoPath,
+          ACL: 'public-read',
+        };
+
+        await s3.copyObject(copyParams).promise();
+        console.log(`Copied video to: ${activeVideoPath}`);
+
+        // Update display's videoLink
+        display.videoLink = `https://belgrand-player.nbg1.your-objectstorage.com/${activeVideoPath}`;
+      }
+    }
+
+    writeJson(clientFile, clients); // Save updates to clients.json
+    res.status(200).send({ message: 'Video successfully published to displays.' });
+  } catch (error) {
+    console.error('Error publishing video:', error);
+    res.status(500).send({ message: 'Failed to publish video.', error: error.message });
+  }
 });
 
 // Start the server
