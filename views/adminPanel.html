@@ -1,373 +1,463 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin Panel</title>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-  <style>
-    body {
-      font-family: 'Roboto', sans-serif;
-      margin: 0;
-      padding: 0;
-      background-color: #f5f5f5;
-      display: flex;
-      flex-direction: column;
-      min-height: 100vh;
-    }
-    header {
-      background-color: #1976d2;
-      color: white;
-      text-align: center;
-      padding: 20px;
-      font-size: 24px;
-      font-weight: bold;
-    }
-    .container {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      flex-wrap: wrap;
-      padding: 20px;
-      gap: 20px;
-      flex: 1;
-    }
-    
-    .panel {
-      background: #fff;
-      border-radius: 8px;
-      padding: 20px;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      flex: 1;
-      min-width: 300px;
-      max-width: 400px;
-      height: auto;
-      display: flex;
-      flex-direction: column;
-      text-align: left;
-    }
-    .panel h3 {
-      margin-bottom: 16px;
-      text-align: center;
-      color: #1976d2;
-    }
-    .list-item {
-      margin-bottom: 8px;
-      padding: 10px;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      cursor: pointer;
-    }
-    .list-item:hover {
-      background-color: #f0f0f0;
-    }
-    .list-item.selected {
-      background-color: #d0e8ff;
-      font-weight: bold;
-    }
-    .form-field {
-      display: flex;
-      flex-direction: column;
-      margin-bottom: 8px;
-    }
-    .form-field label {
-      margin-bottom: 4px;
-      font-weight: bold;
-    }
-    .form-field input[type="text"],
-    .form-field input[type="email"],
-    .form-field input[type="password"] {
-      padding: 8px;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-    }
-    .button {
-      background-color: #1976d2;
-      color: white;
-      padding: 10px 20px;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      text-align: center;
-      font-size: 16px;
-    }
-    .button:hover {
-      background-color: #155a9c;
-    }
-    
-    .modal {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.5);
-      justify-content: center;
-      align-items: center;
-    }
-    .modal-content {
-      background: white;
-      padding: 20px;
-      border-radius: 8px;
-      max-width: 400px;
-      width: 100%;
-    }
-    .modal-header {
-      font-size: 18px;
-      font-weight: bold;
-      margin-bottom: 10px;
-    }
-    .modal-actions {
-      display: flex;
-      justify-content: flex-end;
-      gap: 10px;
-      margin-top: 20px;
-    }
-  </style>
-</head>
-<body>
-  <header>ADMIN PANEL</header>
-  <div class="container">
-    <!-- User List -->
-    <div class="panel" id="userListPanel">
-      <h3>User List</h3>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin Panel</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/icon?family=Material+Icons"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        font-family: "Roboto", sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f5f5f5;
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+      }
+      .displaysCheckboxesFix {
+        margin:20px 0 !important;
+        flex-direction: row-reverse !important;
+        justify-content: space-between !important;
+      }
+      header {
+        background-color: #1976d2;
+        color: white;
+        text-align: center;
+        padding: 20px;
+        font-size: 24px;
+        font-weight: bold;
+      }
+      .container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-wrap: wrap;
+        padding: 20px;
+        gap: 20px;
+        flex: 1;
+      }
+
+      .panel {
+        background: #fff;
+        border-radius: 8px;
+        padding: 20px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        flex: 1;
+        min-width: 300px;
+        max-width: 400px;
+        height: auto;
+        display: flex;
+        flex-direction: column;
+        text-align: left;
+      }
+      .panel h3 {
+        margin-bottom: 16px;
+        text-align: center;
+        color: #1976d2;
+      }
+      .list-item {
+        margin-bottom: 8px;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        cursor: pointer;
+      }
+      .list-item > span {
+        display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+      }
+      .list-item:hover {
+        background-color: #f0f0f0;
+      }
+      .list-item.selected {
+        background-color: #d0e8ff;
+        font-weight: bold;
+      }
+      .form-field {
+        display: flex;
+        flex-direction: column;
+        margin-bottom: 8px;
+      }
+      .form-field label {
+        margin-bottom: 4px;
+        font-weight: bold;
+      }
+      .form-field input[type="text"],
+      .form-field input[type="email"],
+      .form-field input[type="password"] {
+        padding: 8px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+      }
+      .button {
+        background-color: #1976d2;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        text-align: center;
+        font-size: 16px;
+      }
+      .button:hover {
+        background-color: #155a9c;
+      }
+
+      .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        justify-content: center;
+        align-items: center;
+      }
+      .modal-content {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        max-width: 400px;
+        width: 100%;
+      }
+      .modal-header {
+        font-size: 18px;
+        font-weight: bold;
+        margin-bottom: 10px;
+      }
+      .modal-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        margin-top: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <header>ADMIN PANEL</header>
+    <div class="container">
+      <!-- User List -->
+      <div class="panel" id="userListPanel">
+        <h3>User List</h3>
+      </div>
+
+      <!-- Create User -->
+      <div class="panel">
+        <h3>Create User</h3>
+        <div class="form-field">
+          <label for="username">Username</label>
+          <input type="text" id="username" placeholder="Enter username" />
+        </div>
+        <div class="form-field">
+          <label for="password">Password</label>
+          <input type="password" id="password" placeholder="Enter password" />
+        </div>
+        <div class="form-field">
+          <label for="email">Email</label>
+          <input type="email" id="email" placeholder="Enter email" />
+        </div>
+        <div class="form-field">
+          <label for="displays">Assign Displays</label>
+          <div id="displayCheckboxes"></div>
+        </div>
+        <button class="button" id="createUserBtn">Create User</button>
+      </div>
+
+      <!-- Display List -->
+      <div class="panel" id="displayListPanel">
+        <h3>Display List</h3>
+        <div class="list-container"></div>
+        <div class="form-field">
+          <label for="display-name">Display Name</label>
+          <input
+            type="text"
+            id="display-name"
+            placeholder="Enter display name"
+          />
+        </div>
+        <div class="form-field">
+          <label for="location">Location</label>
+          <input type="text" id="location" placeholder="Enter location" />
+        </div>
+        <div class="form-field">
+          <label for="resolution">Resolution</label>
+          <input type="text" id="resolution" placeholder="Enter resolution" />
+        </div>
+        <button class="button" id="createDisplayBtn">Create Display</button>
+      </div>
+
+      <!-- Display Stream Link -->
+      <div class="panel" id="displayStreamPanel">
+        <h3>Display Stream Link</h3>
+        <button class="button" id="refreshBtn">Refresh</button>
+        <div id="streamLinks"></div>
+      </div>
     </div>
 
-    <!-- Create User -->
-    <div class="panel">
-      <h3>Create User</h3>
-      <div class="form-field">
-        <label for="username">Username</label>
-        <input type="text" id="username" placeholder="Enter username">
-      </div>
-      <div class="form-field">
-        <label for="password">Password</label>
-        <input type="password" id="password" placeholder="Enter password">
-      </div>
-      <div class="form-field">
-        <label for="email">Email</label>
-        <input type="email" id="email" placeholder="Enter email">
-      </div>
-      <div class="form-field">
-        <label for="displays">Assign Displays</label>
-        <div id="displayCheckboxes"></div>
-      </div>
-      <button class="button" id="createUserBtn">Create User</button>
-    </div>
-
-    <!-- Display List -->
-    <div class="panel" id="displayListPanel">
-      <h3>Display List</h3>
-      <div class="list-container"></div>
-      <div class="form-field">
-        <label for="display-name">Display Name</label>
-        <input type="text" id="display-name" placeholder="Enter display name">
-      </div>
-      <div class="form-field">
-        <label for="location">Location</label>
-        <input type="text" id="location" placeholder="Enter location">
-      </div>
-      <div class="form-field">
-        <label for="resolution">Resolution</label>
-        <input type="text" id="resolution" placeholder="Enter resolution">
-      </div>
-      <button class="button" id="createDisplayBtn">Create Display</button>
-    </div>
-
-    <!-- Display Stream Link -->
-    <div class="panel" id="displayStreamPanel">
-      <h3>Display Stream Link</h3>
-      <button class="button" id="refreshBtn">Refresh</button>
-      <div id="streamLinks"></div>
-    </div>
-  </div>
-
-  <!-- Modals -->
-  <div class="modal" id="editDisplayModal">
-    <div class="modal-content">
-      <div class="modal-header">Edit Display</div>
-      <div class="form-field">
-        <label for="edit-display-name">Display Name</label>
-        <input type="text" id="edit-display-name">
-      </div>
-      <div class="form-field">
-        <label for="edit-location">Location</label>
-        <input type="text" id="edit-location">
-      </div>
-      <div class="form-field">
-        <label for="edit-resolution">Resolution</label>
-        <input type="text" id="edit-resolution">
-      </div>
-      <div class="modal-actions">
-        <button class="button" id="saveDisplayChanges">Save</button>
-        <button class="button" id="deleteDisplay">Delete</button>
-        <button class="button" id="closeDisplayModal">Cancel</button>
+    <!-- Modals -->
+    <div class="modal" id="editDisplayModal">
+      <div class="modal-content">
+        <div class="modal-header">Edit Display</div>
+        <div class="form-field">
+          <label for="edit-display-name">Display Name</label>
+          <input type="text" id="edit-display-name" />
+        </div>
+        <div class="form-field">
+          <label for="edit-location">Location</label>
+          <input type="text" id="edit-location" />
+        </div>
+        <div class="form-field">
+          <label for="edit-resolution">Resolution</label>
+          <input type="text" id="edit-resolution" />
+        </div>
+        <div class="modal-actions">
+          <button class="button" id="saveDisplayChanges">Save</button>
+          <button class="button" id="deleteDisplay">Delete</button>
+          <button class="button" id="closeDisplayModal">Cancel</button>
+        </div>
       </div>
     </div>
-  </div>
 
-  <footer>Belgrand</footer>
+    <footer>Belgrand</footer>
 
-  <script>
-    const userListPanel = document.getElementById('userListPanel');
-    const streamLinksPanel = document.getElementById('streamLinks');
-    const displayListPanel = document.getElementById('displayListPanel');
-    const displayCheckboxes = document.getElementById('displayCheckboxes');
-    let selectedUserId = null;
+    <script>
+      const editDisplayModal = document.getElementById("editDisplayModal");
+      const editDisplayName = document.getElementById("edit-display-name");
+      const editDisplayLocation = document.getElementById("edit-location");
+      const editDisplayResolution = document.getElementById("edit-resolution");
+      const saveDisplayChanges = document.getElementById("saveDisplayChanges");
+      const deleteDisplayButton = document.getElementById("deleteDisplay");
+      const closeDisplayModal = document.getElementById("closeDisplayModal");
+      const streamLinksPanel = document.getElementById("streamLinks");
+      let selectedDisplayId = null;
 
-    // Load Users
-    const loadUsers = async () => {
-      const response = await fetch('/clients');
-      const users = await response.json();
-      userListPanel.innerHTML = '<h3>User List</h3>';
-      users.forEach((user) => {
-        const div = document.createElement('div');
-        div.className = 'list-item';
-        div.innerHTML = `<i class="material-icons">person</i>${user.name}`;
-        div.dataset.userId = user.id;
-        div.addEventListener('click', () => {
-          document.querySelectorAll('.list-item').forEach(item => item.classList.remove('selected'));
-          div.classList.add('selected');
-          selectedUserId = user.id;
-          loadUserDisplays(user.id);
+      
+
+      // Load Users
+      const loadUsers = async () => {
+        const response = await fetch("/clients");
+        const users = await response.json();
+        userListPanel.innerHTML = "<h3>User List</h3>";
+        users.forEach((user) => {
+          const div = document.createElement("div");
+          div.className = "list-item";
+          div.innerHTML = `<i class="material-icons">person</i>${user.name}`;
+          div.dataset.userId = user.id;
+          div.addEventListener("click", () => {
+            document
+              .querySelectorAll(".list-item")
+              .forEach((item) => item.classList.remove("selected"));
+            div.classList.add("selected");
+            selectedUserId = user.id;
+            loadUserDisplays(user.id);
+          });
+          userListPanel.appendChild(div);
         });
-        userListPanel.appendChild(div);
-      });
-    };
+      };
 
-    // Load User Displays
-    const loadUserDisplays = async (userId) => {
-      const response = await fetch(`/user-displays/${userId}`);
-      const displays = await response.json();
-      streamLinksPanel.innerHTML = ''; // Clear current links
+      // Load User Displays
+      const loadUserDisplays = async (userId) => {
+        const response = await fetch(`/user-displays/${userId}`);
+        const displays = await response.json();
+        streamLinksPanel.innerHTML = ""; // Clear current links
 
-      if (displays.length === 0) {
-        streamLinksPanel.innerHTML = '<p>No displays assigned to this user.</p>';
-      } else {
-        displays.forEach((display) => {
-          const div = document.createElement('div');
-          div.className = 'list-item';
-          div.innerHTML = display.videoLink ? 
-            `<span><i class="material-icons">link</i>${display.name}</span>
-             <button class="button copy-link" data-link="${display.videoLink}">Copy Link</button>` :
-            `<span>${display.name} (No video)</span>`;
-          streamLinksPanel.appendChild(div);
-        });
+        if (displays.length === 0) {
+          streamLinksPanel.innerHTML =
+            "<p>No displays assigned to this user.</p>";
+        } else {
+          displays.forEach((display) => {
+            const div = document.createElement("div");
+            div.className = "list-item";
+            div.innerHTML = display.videoLink
+              ? `<span><i class="material-icons">link</i>${display.name}</span>
+             <button class="button copy-link" data-link="${display.videoLink}">Copy Link</button>`
+              : `<span>${display.name} (No video)</span>`;
+            streamLinksPanel.appendChild(div);
+          });
 
-        // Add Copy Link functionality
-        document.querySelectorAll('.copy-link').forEach((button) => {
-          button.addEventListener('click', (event) => {
-            const link = event.target.getAttribute('data-link');
-            navigator.clipboard.writeText(link).then(() => {
-              alert('Link copied to clipboard!');
+          // Add Copy Link functionality
+          document.querySelectorAll(".copy-link").forEach((button) => {
+            button.addEventListener("click", (event) => {
+              const link = event.target.getAttribute("data-link");
+              navigator.clipboard.writeText(link).then(() => {
+                alert("Link copied to clipboard!");
+              });
             });
           });
-        });
-      }
-    };
+        }
+      };
 
-    // Load Displays for Assign Displays Section
-    const loadDisplayCheckboxes = async () => {
-      const response = await fetch('/displays');
-      const displays = await response.json();
-      displayCheckboxes.innerHTML = ''; // Clear existing checkboxes
-      displays.forEach((display) => {
-        const div = document.createElement('div');
-        div.className = 'form-field';
-        div.innerHTML = `
+      // Load Displays for Assign Displays Section
+      const loadDisplayCheckboxes = async () => {
+        const response = await fetch("/displays");
+        const displays = await response.json();
+        displayCheckboxes.innerHTML = ""; // Clear existing checkboxes
+        displays.forEach((display) => {
+          const div = document.createElement("div");
+          div.className = "form-field displaysCheckboxesFix";
+          div.innerHTML = `
           <input type="checkbox" value="${display.id}" id="display-${display.id}">
           <label for="display-${display.id}">${display.name} (${display.resolution})</label>
         `;
-        displayCheckboxes.appendChild(div);
-      });
-    };
+          displayCheckboxes.appendChild(div);
+        });
+      };
 
-    // Load Displays
-    const loadDisplays = async () => {
-  const response = await fetch('/displays');
-  const displays = await response.json();
+      // Load Displays
+      const loadDisplays = async () => {
+        const response = await fetch("/displays");
+        const displays = await response.json();
+        const listContainer = displayListPanel.querySelector(".list-container");
+        listContainer.innerHTML = ""; // Clear the list
 
-  // Clear only the list items, not the entire panel content
-  const displayListContainer = displayListPanel.querySelector('.list-container');
-  if (!displayListContainer) {
-    const container = document.createElement('div');
-    container.className = 'list-container';
-    displayListPanel.appendChild(container);
-  } else {
-    displayListContainer.innerHTML = ''; // Clear existing list items
-  }
+        displays.forEach((display) => {
+          const div = document.createElement("div");
+          div.className = "list-item";
+          div.innerHTML = `
+          <span><i class="material-icons">tv</i>${display.name} - ${display.location} (${display.resolution})</span>
+          <button class="button" onclick="openEditDisplayModal(${display.id}, '${display.name}', '${display.location}', '${display.resolution}')">Edit</button>
+        `;
+          listContainer.appendChild(div);
+        });
+      };
 
-  displays.forEach((display) => {
-    const div = document.createElement('div');
-    div.className = 'list-item';
-    div.innerHTML = `<i class="material-icons">tv</i>${display.name} - ${display.location} (${display.resolution})`;
-    displayListContainer.appendChild(div);
-  });
-};
+      // Create Display
+      document
+        .getElementById("createDisplayBtn")
+        .addEventListener("click", async () => {
+          const name = document.getElementById("display-name").value;
+          const location = document.getElementById("location").value;
+          const resolution = document.getElementById("resolution").value;
 
-    // Create Display
-    document.getElementById('createDisplayBtn').addEventListener('click', async () => {
-      const name = document.getElementById('display-name').value;
-      const location = document.getElementById('location').value;
-      const resolution = document.getElementById('resolution').value;
+          const response = await fetch("/create-display", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name, location, resolution }),
+          });
 
-      const response = await fetch('/create-display', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, location, resolution }),
-      });
+          if (response.ok) {
+            alert("Display created successfully!");
+            await loadDisplays();
+            await loadDisplayCheckboxes();
+          } else {
+            alert("Failed to create display. Please try again.");
+          }
+        });
 
-      if (response.ok) {
-        alert('Display created successfully!');
-        await loadDisplays();
-        await loadDisplayCheckboxes();
-      } else {
-        alert('Failed to create display. Please try again.');
-      }
-    });
-
-    // Refresh Button Event Listener
-    document.getElementById('refreshBtn').addEventListener('click', () => {
-      if (selectedUserId) {
-        loadUserDisplays(selectedUserId);
-      } else {
-        alert('Please select a user first.');
-      }
-    });
-
-    // Create User
-    document.getElementById('createUserBtn').addEventListener('click', async () => {
-      const name = document.getElementById('username').value;
-      const password = document.getElementById('password').value;
-      const email = document.getElementById('email').value;
-      const displayIds = Array.from(
-        displayCheckboxes.querySelectorAll('input[type="checkbox"]:checked')
-      ).map((checkbox) => parseInt(checkbox.value, 10));
-
-      const response = await fetch('/create-user', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password, displayIds }),
+      // Refresh Button Event Listener
+      document.getElementById("refreshBtn").addEventListener("click", () => {
+        if (selectedUserId) {
+          loadUserDisplays(selectedUserId);
+        } else {
+          alert("Please select a user first.");
+        }
       });
 
-      if (response.ok) {
-        alert('User created successfully!');
-        await loadUsers();
-        await loadDisplayCheckboxes();
-      } else {
-        alert('Failed to create user. Please try again.');
-      }
-    });
+      // Create User
+      document
+        .getElementById("createUserBtn")
+        .addEventListener("click", async () => {
+          const name = document.getElementById("username").value;
+          const password = document.getElementById("password").value;
+          const email = document.getElementById("email").value;
+          const displayIds = Array.from(
+            displayCheckboxes.querySelectorAll('input[type="checkbox"]:checked')
+          ).map((checkbox) => parseInt(checkbox.value, 10));
 
-    // Initial Load
-    loadUsers();
-    loadDisplays();
-    loadDisplayCheckboxes();
-  </script>
-</body>
+          const response = await fetch("/create-user", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name, email, password, displayIds }),
+          });
+
+          if (response.ok) {
+            alert("User created successfully!");
+            await loadUsers();
+            await loadDisplayCheckboxes();
+          } else {
+            alert("Failed to create user. Please try again.");
+          }
+        });
+
+      const openEditDisplayModal = (id, name, location, resolution) => {
+        selectedDisplayId = id;
+        editDisplayName.value = name;
+        editDisplayLocation.value = location;
+        editDisplayResolution.value = resolution;
+        editDisplayModal.style.display = "flex";
+      };
+
+      // Save Changes to Display
+      document
+        .getElementById("saveDisplayChanges")
+        .addEventListener("click", async () => {
+          const name = document.getElementById("edit-display-name").value;
+          const location = document.getElementById("edit-location").value;
+          const resolution = document.getElementById("edit-resolution").value;
+
+          const response = await fetch("/edit-display", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              id: selectedDisplayId,
+              name,
+              location,
+              resolution,
+            }),
+          });
+
+          if (response.ok) {
+            alert("Display updated successfully.");
+            editDisplayModal.style.display = "none";
+            loadUsers();
+            loadDisplayCheckboxes();
+            loadDisplays();
+          } else {
+            const error = await response.json();
+            alert(`Failed to update display: ${error.message}`);
+          }
+        });
+
+      // Delete Display
+      deleteDisplayButton.addEventListener("click", async () => {
+        const response = await fetch(`/delete-display/${selectedDisplayId}`, {
+          method: "DELETE",
+        });
+
+        if (response.ok) {
+          alert("Display deleted successfully!");
+          loadDisplays();
+          loadUsers();
+          loadDisplayCheckboxes();
+          editDisplayModal.style.display = "none";
+        } else {
+          alert("Failed to delete display.");
+        }
+      });
+
+      // Close Modal
+      closeDisplayModal.addEventListener("click", () => {
+        editDisplayModal.style.display = "none";
+      });
+
+      // Initial Load
+      loadUsers();
+      loadDisplays();
+      loadDisplayCheckboxes();
+    </script>
+  </body>
 </html>

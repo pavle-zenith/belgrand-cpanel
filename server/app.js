@@ -18,6 +18,8 @@ app.use(
         "default-src": ["'self'"],
         "script-src": ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
         "style-src": ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+        "script-src": ["'self'", "'unsafe-inline'"], // Allow inline scripts
+        "script-src-attr": ["'unsafe-inline'"], // Allow inline event handlers
         "img-src": ["'self'", "data:"],
         "font-src": ["'self'", "https://fonts.gstatic.com"],
         "media-src": ["'self'", "blob:"], // Allow blob: URLs for media
@@ -193,7 +195,53 @@ app.get('/client/displays', (req, res) => {
 
   return res.status(200).send(client.displays);
 });
+app.post('/edit-display', (req, res) => {
+  const { id, name, location, resolution } = req.body;
 
+  if (!id || !name || !location || !resolution) {
+    return res.status(400).send({ message: 'All fields are required.' });
+  }
+
+  const displays = readJson(displayFile);
+  const display = displays.find((d) => d.id === Number(id));
+
+  if (!display) {
+    return res.status(404).send({ message: 'Display not found.' });
+  }
+
+  // Update display details
+  display.name = name;
+  display.location = location;
+  display.resolution = resolution;
+
+  writeJson(displayFile, displays);
+  res.status(200).send({ message: 'Display updated successfully.' });
+});
+
+// Delete Display
+app.delete('/delete-display/:id', (req, res) => {
+  const { id } = req.params;
+
+  const displays = readJson(displayFile);
+  const displayIndex = displays.findIndex((d) => d.id === Number(id));
+
+  if (displayIndex === -1) {
+    return res.status(404).send({ message: 'Display not found.' });
+  }
+
+  // Remove display from the list
+  const [deletedDisplay] = displays.splice(displayIndex, 1);
+  writeJson(displayFile, displays);
+
+  // Remove the display from all clients
+  const clients = readJson(clientFile);
+  clients.forEach((client) => {
+    client.displays = client.displays.filter((d) => d.id !== Number(id));
+  });
+  writeJson(clientFile, clients);
+
+  res.status(200).send({ message: 'Display deleted successfully.', deletedDisplay });
+});
 app.get('/client/content', (req, res) => {
   const { clientId } = req.query;
 

@@ -1,15 +1,9 @@
 [
   {
-    "id": 1735323889940,
-    "name": "displej",
-    "location": "teslic",
-    "resolution": "1208x720"
-  },
-  {
     "id": 1735323897146,
-    "name": "displej",
-    "location": "teslic",
-    "resolution": "1208x720"
+    "name": "displej aa",
+    "location": "teslic aa",
+    "resolution": "1208x720 a"
   },
   {
     "id": 1735324699747,
@@ -40,17 +34,5 @@
     "name": "TEST",
     "location": "test",
     "resolution": "123x123"
-  },
-  {
-    "id": 1735493500901,
-    "name": "displej 222",
-    "location": "displej 222",
-    "resolution": "1280 X 7020"
-  },
-  {
-    "id": 1735495653632,
-    "name": "BELGRAND DISPLEJ",
-    "location": "TESLIC",
-    "resolution": "1280X720"
   }
 ]
