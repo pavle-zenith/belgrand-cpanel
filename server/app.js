@@ -75,6 +75,9 @@ const s3 = new AWS.S3({
   },
 });
 
+// Define the Hetzner Base URL
+const HETZNER_BASE_URL = 'https://belgrand-player.nbg1.your-objectstorage.com/belgrand-player/'; // Update if different
+
 // Upload Video to S3
 const uploadToS3 = (filePath, bucket, key) => {
   console.log(`Uploading file to S3. Bucket: ${bucket}, Key: ${key}`); // Debugging
@@ -168,6 +171,7 @@ app.post('/create-user', (req, res) => {
     email,
     password,
     displays: assignedDisplays,
+    videos: [], // Initialize videos array
   };
 
   clients.push(newClient);
@@ -177,8 +181,6 @@ app.post('/create-user', (req, res) => {
 });
 
 // API: Upload Video
-
-
 app.get('/client/displays', (req, res) => {
   const { clientId } = req.query;
 
@@ -195,6 +197,7 @@ app.get('/client/displays', (req, res) => {
 
   return res.status(200).send(client.displays);
 });
+
 app.post('/edit-display', (req, res) => {
   const { id, name, location, resolution } = req.body;
 
@@ -242,6 +245,7 @@ app.delete('/delete-display/:id', (req, res) => {
 
   res.status(200).send({ message: 'Display deleted successfully.', deletedDisplay });
 });
+
 app.get('/client/content', (req, res) => {
   const { clientId } = req.query;
 
@@ -284,6 +288,7 @@ app.get('/user-displays/:id', (req, res) => {
   }
   return res.status(404).send({ message: 'User not found' });
 });
+
 const getUserVideoDirectory = (clientName) => `user/videos/${clientName}`;
 const getActiveVideoPath = (clientName, displayName) =>
   `user/videos/${clientName}/${displayName}/active_video.mp4`;
@@ -306,7 +311,9 @@ app.post('/client/upload', upload.single('video'), async (req, res) => {
 
     const clientName = client.name.replace(/\s+/g, '_');
     const videoDirectory = `user/videos/${clientName}/`;
-    const videoKey = `${videoDirectory}${Date.now()}_${req.file.originalname}`;
+    const timestamp = Date.now();
+    const sanitizedOriginalName = req.file.originalname.replace(/\s+/g, '_');
+    const videoKey = `${videoDirectory}${timestamp}_${sanitizedOriginalName}`;
 
     console.log(`Uploading to directory: ${videoDirectory}`);
     console.log(`Full key: ${videoKey}`);
@@ -327,7 +334,6 @@ app.post('/client/upload', upload.single('video'), async (req, res) => {
     res.status(500).send({ message: 'Failed to upload video.', error: error.message });
   }
 });
-
 
 // Fetch Videos for a Client
 app.get('/client/videos', (req, res) => {
@@ -362,6 +368,7 @@ const makePublic = async (bucketName, key) => {
     console.error(`Error setting ACL for ${key}:`, error);
   }
 };
+
 // Publish Video to a Display
 app.post('/client/publish', async (req, res) => {
   const { clientId, displays, videoUrl } = req.body;
@@ -387,53 +394,21 @@ app.post('/client/publish', async (req, res) => {
 
     console.log(`Corrected Source Key: ${sourceKey}`);
 
-    // Check if source key exists
-    // try {
-    //   const headObject = await s3.headObject({
-    //     Bucket: 'belgrand-player',
-    //     Key: sourceKey,
-    //   }).promise();
-    //   console.log('Source file exists:', headObject);
-    // } catch (err) {
-    //   console.error('Source file does not exist:', err.message);
-    //   return res.status(404).send({ message: 'Source video does not exist.' });
-    // }
+    // Construct the Hetzner-hosted video URL
+    const hetznerVideoUrl = `${HETZNER_BASE_URL}${sourceKey}`;
+    console.log(`Hetzner Video URL: ${hetznerVideoUrl}`);
 
     // Process each selected display
     for (const displayId of displays) {
       const display = client.displays.find((d) => d.id === Number(displayId));
       if (display) {
         const displayName = display.name.replace(/\s+/g, '_');
-        // const activeVideoPath = `belgrand-player/user/videos/${clientName}/active_video.mp4`;
-        const activeVideoPath = videoUrl;
+        // Optionally, you can define a specific path or naming convention per display
+        // For now, we'll use the hetznerVideoUrl directly
 
-        console.log(`Target Path: ${activeVideoPath}`);
+        console.log(`Assigning Video to Display ID ${displayId}: ${hetznerVideoUrl}`);
 
-        // Delete existing active video
-        // try {
-        //   await s3.deleteObject({
-        //     Bucket: 'belgrand-player',
-        //     Key: activeVideoPath,
-        //   }).promise();
-        //   console.log(`Deleted existing active video: ${activeVideoPath}`);
-        // } catch (deleteErr) {
-        //   console.log(`No active video to delete:`, deleteErr.message);
-        // }
-
-        // Copy video to active directory
-        // const copyParams = {
-        //   Bucket: 'belgrand-player',
-        //   CopySource: encodeURIComponent(sourceKey),
-        //   Key: activeVideoPath,
-        //   ACL: 'public-read',
-        // };
-
-        // await s3.copyObject(copyParams).promise();
-        // console.log(`Copied video to: ${activeVideoPath}`);
-
-        // Update display's videoLink
-        // display.videoLink = `https://belgrand-player.nbg1.your-objectstorage.com/${activeVideoPath}`;
-        display.videoLink = videoUrl;
+        display.videoLink = hetznerVideoUrl;
       }
     }
 
@@ -445,61 +420,11 @@ app.post('/client/publish', async (req, res) => {
   }
 });
 
-// app.get('/client/getCurrentVideo/:clientId/:displayId', async (req, res) => {
-//   const { clientId, displayId } = req.params;
-
-//   // Čitanje klijentskog fajla
-//   const clients = readJson(clientFile);
-//   const client = clients.find((c) => c.id === Number(clientId));
-
-//   if (!client) {
-//     return res.status(404).send({ message: 'Client not found.' });
-//   }
-
-//   // Pronalaženje ekrana za zadati displayId
-//   const display = client.displays.find((d) => d.id === Number(displayId));
-
-//   if (!display || !display.videoLink) {
-//     return res.status(404).send({ message: 'Video for the specified display not found.' });
-//   }
-
-//   try {
-//     // Prilagođavanje sourceKey-a
-//     const videoUrl = display.videoLink;
-//     const sourceKey = videoUrl.replace('https://belgrand-player.nbg1.your-objectstorage.com/', '')
-//     console.log(`Fetching video with key: ${sourceKey}`); // Debugging
-
-//     console.log(`Client ID: ${clientId}`);
-//     console.log(`Display ID: ${displayId}`);
-//     console.log(`Video URL: ${videoUrl}`);
-//     console.log(`Generated Source Key: ${sourceKey}`);
-
-//     // Provera postojanja fajla na S3
-//     const headObject = await s3
-//       .headObject({
-//         Bucket: 'belgrand-player',
-//         Key: sourceKey,
-//       })
-//       .promise();
-
-//     // Postavljanje headera za video
-//     res.setHeader('Content-Type', headObject.ContentType || 'video/mp4');
-//     res.setHeader('Content-Length', headObject.ContentLength);
-//     res.setHeader('Last-Modified', headObject.LastModified);
-//     res.setHeader('ETag', headObject.ETag);
-
-//     // Slanje URL-a
-//     res.status(200).send({ videoUrl });
-//   } catch (error) {
-//     console.error('Error fetching video from S3:', error);
-//     res.status(500).send({ message: 'Failed to fetch video.', error: error.message });
-//   }
-// });
-
+// Fetch Current Video for a Display and Redirect
 app.get('/client/getCurrentVideo/:clientId/:displayId', async (req, res) => {
   const { clientId, displayId } = req.params;
 
-  // Čitanje klijentskog fajla
+  // Read the clients file
   const clients = readJson(clientFile);
   const client = clients.find((c) => c.id === Number(clientId));
 
@@ -507,7 +432,7 @@ app.get('/client/getCurrentVideo/:clientId/:displayId', async (req, res) => {
     return res.status(404).send({ message: 'Client not found.' });
   }
 
-  // Pronalaženje ekrana za zadati displayId
+  // Find the specific display
   const display = client.displays.find((d) => d.id === Number(displayId));
 
   if (!display || !display.videoLink) {
@@ -521,14 +446,13 @@ app.get('/client/getCurrentVideo/:clientId/:displayId', async (req, res) => {
     console.log(`Display ID: ${displayId}`);
     console.log(`Video URL: ${videoUrl}`);
 
-    // Redirektuj klijenta na direktan URL videa
+    // Redirect the client to the Hetzner-hosted video URL
     res.status(302).redirect(videoUrl);
   } catch (error) {
     console.error('Error fetching video:', error);
     res.status(500).send({ message: 'Failed to serve video.', error: error.message });
   }
 });
-
 
 // Start the server
 const PORT = process.env.PORT || 3000;

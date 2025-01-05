@@ -23,7 +23,7 @@
         min-height: 100vh;
       }
       .displaysCheckboxesFix {
-        margin:20px 0 !important;
+        margin: 20px 0 !important;
         flex-direction: row-reverse !important;
         justify-content: space-between !important;
       }
@@ -38,7 +38,7 @@
       .container {
         display: flex;
         justify-content: center;
-        align-items: center;
+        align-items: flex-start;
         flex-wrap: wrap;
         padding: 20px;
         gap: 20px;
@@ -52,7 +52,7 @@
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         flex: 1;
         min-width: 300px;
-        max-width: 400px;
+        max-width: 600px;
         height: auto;
         display: flex;
         flex-direction: column;
@@ -75,9 +75,9 @@
       }
       .list-item > span {
         display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 8px;
+        justify-content: center;
+        align-items: center;
+        gap: 8px;
       }
       .list-item:hover {
         background-color: #f0f0f0;
@@ -111,6 +111,7 @@
         cursor: pointer;
         text-align: center;
         font-size: 16px;
+        margin-top: 10px;
       }
       .button:hover {
         background-color: #155a9c;
@@ -144,6 +145,33 @@
         justify-content: flex-end;
         gap: 10px;
         margin-top: 20px;
+      }
+
+      /* New Styles for Stream Links Table */
+      #streamLinksTable {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+      }
+      #streamLinksTable th,
+      #streamLinksTable td {
+        border: 1px solid #ddd;
+        padding: 8px;
+        text-align: left;
+      }
+      #streamLinksTable th {
+        background-color: #1976d2;
+        color: white;
+      }
+      #streamLinksTable tr:nth-child(even) {
+        background-color: #f9f9f9;
+      }
+      #streamLinksTable tr:hover {
+        background-color: #f1f1f1;
+      }
+      .stream-link {
+        color: #1976d2;
+        text-decoration: none;
       }
     </style>
   </head>
@@ -202,7 +230,7 @@
 
       <!-- Display Stream Link -->
       <div class="panel" id="displayStreamPanel">
-        <h3>Display Stream Link</h3>
+        <h3>Display Stream Links</h3>
         <button class="button" id="refreshBtn">Refresh</button>
         <div id="streamLinks"></div>
       </div>
@@ -244,13 +272,13 @@
       const closeDisplayModal = document.getElementById("closeDisplayModal");
       const streamLinksPanel = document.getElementById("streamLinks");
       let selectedDisplayId = null;
-
-      
+      let selectedUserId = null;
 
       // Load Users
       const loadUsers = async () => {
         const response = await fetch("/clients");
         const users = await response.json();
+        const userListPanel = document.getElementById("userListPanel");
         userListPanel.innerHTML = "<h3>User List</h3>";
         users.forEach((user) => {
           const div = document.createElement("div");
@@ -259,7 +287,7 @@
           div.dataset.userId = user.id;
           div.addEventListener("click", () => {
             document
-              .querySelectorAll(".list-item")
+              .querySelectorAll("#userListPanel .list-item")
               .forEach((item) => item.classList.remove("selected"));
             div.classList.add("selected");
             selectedUserId = user.id;
@@ -269,7 +297,7 @@
         });
       };
 
-      // Load User Displays
+      // Load User Displays and Display Stream Links
       const loadUserDisplays = async (userId) => {
         const response = await fetch(`/user-displays/${userId}`);
         const displays = await response.json();
@@ -279,25 +307,68 @@
           streamLinksPanel.innerHTML =
             "<p>No displays assigned to this user.</p>";
         } else {
+          // Create a table to display stream links
+          const table = document.createElement("table");
+          table.id = "streamLinksTable";
+          table.innerHTML = `
+            <thead>
+              <tr>
+                <th>Display Name</th>
+                <th>Stream Link</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+            </tbody>
+          `;
+          const tbody = table.querySelector("tbody");
+
           displays.forEach((display) => {
-            const div = document.createElement("div");
-            div.className = "list-item";
-            div.innerHTML = display.videoLink
-              ? `<span><i class="material-icons">link</i>${display.name}</span>
-             <button class="button copy-link" data-link="${display.videoLink}">Copy Link</button>`
-              : `<span>${display.name} (No video)</span>`;
-            streamLinksPanel.appendChild(div);
+            const tr = document.createElement("tr");
+
+            // Display Name
+            const nameTd = document.createElement("td");
+            nameTd.textContent = display.name;
+            tr.appendChild(nameTd);
+
+            // Stream Link
+            const linkTd = document.createElement("td");
+            if (display.videoLink) {
+              const getCurrentVideoUrl = `${window.location.origin}/client/getCurrentVideo/${userId}/${display.id}`;
+              const link = document.createElement("a");
+              link.href = getCurrentVideoUrl;
+              link.textContent = "Stream Link";
+              link.className = "stream-link";
+              link.target = "_blank"; // Opens in a new tab
+              linkTd.appendChild(link);
+            } else {
+              linkTd.textContent = "No video published.";
+            }
+            tr.appendChild(linkTd);
+
+            // Actions (Copy Link Button)
+            const actionsTd = document.createElement("td");
+            if (display.videoLink) {
+              const copyButton = document.createElement("button");
+              copyButton.className = "button";
+              copyButton.textContent = "Copy Link";
+              copyButton.dataset.link = `${window.location.origin}/client/getCurrentVideo/${userId}/${display.id}`;
+              copyButton.addEventListener("click", (event) => {
+                const link = event.target.dataset.link;
+                navigator.clipboard.writeText(link).then(() => {
+                  alert("Stream link copied to clipboard!");
+                });
+              });
+              actionsTd.appendChild(copyButton);
+            } else {
+              actionsTd.textContent = "-";
+            }
+            tr.appendChild(actionsTd);
+
+            tbody.appendChild(tr);
           });
 
-          // Add Copy Link functionality
-          document.querySelectorAll(".copy-link").forEach((button) => {
-            button.addEventListener("click", (event) => {
-              const link = event.target.getAttribute("data-link");
-              navigator.clipboard.writeText(link).then(() => {
-                alert("Link copied to clipboard!");
-              });
-            });
-          });
+          streamLinksPanel.appendChild(table);
         }
       };
 
@@ -305,14 +376,15 @@
       const loadDisplayCheckboxes = async () => {
         const response = await fetch("/displays");
         const displays = await response.json();
+        const displayCheckboxes = document.getElementById("displayCheckboxes");
         displayCheckboxes.innerHTML = ""; // Clear existing checkboxes
         displays.forEach((display) => {
           const div = document.createElement("div");
           div.className = "form-field displaysCheckboxesFix";
           div.innerHTML = `
-          <input type="checkbox" value="${display.id}" id="display-${display.id}">
-          <label for="display-${display.id}">${display.name} (${display.resolution})</label>
-        `;
+            <input type="checkbox" value="${display.id}" id="display-${display.id}">
+            <label for="display-${display.id}">${display.name} (${display.resolution})</label>
+          `;
           displayCheckboxes.appendChild(div);
         });
       };
@@ -321,6 +393,7 @@
       const loadDisplays = async () => {
         const response = await fetch("/displays");
         const displays = await response.json();
+        const displayListPanel = document.getElementById("displayListPanel");
         const listContainer = displayListPanel.querySelector(".list-container");
         listContainer.innerHTML = ""; // Clear the list
 
@@ -328,9 +401,9 @@
           const div = document.createElement("div");
           div.className = "list-item";
           div.innerHTML = `
-          <span><i class="material-icons">tv</i>${display.name} - ${display.location} (${display.resolution})</span>
-          <button class="button" onclick="openEditDisplayModal(${display.id}, '${display.name}', '${display.location}', '${display.resolution}')">Edit</button>
-        `;
+            <span><i class="material-icons">tv</i>${display.name} - ${display.location} (${display.resolution})</span>
+            <button class="button" onclick="openEditDisplayModal(${display.id}, '${display.name}', '${display.location}', '${display.resolution}')">Edit</button>
+          `;
           listContainer.appendChild(div);
         });
       };
@@ -339,9 +412,14 @@
       document
         .getElementById("createDisplayBtn")
         .addEventListener("click", async () => {
-          const name = document.getElementById("display-name").value;
-          const location = document.getElementById("location").value;
-          const resolution = document.getElementById("resolution").value;
+          const name = document.getElementById("display-name").value.trim();
+          const location = document.getElementById("location").value.trim();
+          const resolution = document.getElementById("resolution").value.trim();
+
+          if (!name || !location || !resolution) {
+            alert("Please fill in all display fields.");
+            return;
+          }
 
           const response = await fetch("/create-display", {
             method: "POST",
@@ -354,7 +432,8 @@
             await loadDisplays();
             await loadDisplayCheckboxes();
           } else {
-            alert("Failed to create display. Please try again.");
+            const error = await response.json();
+            alert("Failed to create display: " + error.message);
           }
         });
 
@@ -371,12 +450,17 @@
       document
         .getElementById("createUserBtn")
         .addEventListener("click", async () => {
-          const name = document.getElementById("username").value;
-          const password = document.getElementById("password").value;
-          const email = document.getElementById("email").value;
+          const name = document.getElementById("username").value.trim();
+          const password = document.getElementById("password").value.trim();
+          const email = document.getElementById("email").value.trim();
           const displayIds = Array.from(
-            displayCheckboxes.querySelectorAll('input[type="checkbox"]:checked')
+            document.querySelectorAll("#displayCheckboxes input[type='checkbox']:checked")
           ).map((checkbox) => parseInt(checkbox.value, 10));
+
+          if (!name || !password || !email) {
+            alert("Please fill in all user fields.");
+            return;
+          }
 
           const response = await fetch("/create-user", {
             method: "POST",
@@ -389,11 +473,13 @@
             await loadUsers();
             await loadDisplayCheckboxes();
           } else {
-            alert("Failed to create user. Please try again.");
+            const error = await response.json();
+            alert("Failed to create user: " + error.message);
           }
         });
 
-      const openEditDisplayModal = (id, name, location, resolution) => {
+      // Open Edit Display Modal
+      window.openEditDisplayModal = (id, name, location, resolution) => {
         selectedDisplayId = id;
         editDisplayName.value = name;
         editDisplayLocation.value = location;
@@ -405,9 +491,14 @@
       document
         .getElementById("saveDisplayChanges")
         .addEventListener("click", async () => {
-          const name = document.getElementById("edit-display-name").value;
-          const location = document.getElementById("edit-location").value;
-          const resolution = document.getElementById("edit-resolution").value;
+          const name = document.getElementById("edit-display-name").value.trim();
+          const location = document.getElementById("edit-location").value.trim();
+          const resolution = document.getElementById("edit-resolution").value.trim();
+
+          if (!name || !location || !resolution) {
+            alert("Please fill in all display fields.");
+            return;
+          }
 
           const response = await fetch("/edit-display", {
             method: "POST",
@@ -423,29 +514,38 @@
           if (response.ok) {
             alert("Display updated successfully.");
             editDisplayModal.style.display = "none";
-            loadUsers();
-            loadDisplayCheckboxes();
-            loadDisplays();
+            await loadUsers();
+            await loadDisplayCheckboxes();
+            await loadDisplays();
           } else {
             const error = await response.json();
-            alert(`Failed to update display: ${error.message}`);
+            alert("Failed to update display: " + error.message);
           }
         });
 
       // Delete Display
       deleteDisplayButton.addEventListener("click", async () => {
+        if (!selectedDisplayId) {
+          alert("No display selected.");
+          return;
+        }
+
+        const confirmDelete = confirm("Are you sure you want to delete this display?");
+        if (!confirmDelete) return;
+
         const response = await fetch(`/delete-display/${selectedDisplayId}`, {
           method: "DELETE",
         });
 
         if (response.ok) {
           alert("Display deleted successfully!");
-          loadDisplays();
-          loadUsers();
-          loadDisplayCheckboxes();
+          await loadDisplays();
+          await loadUsers();
+          await loadDisplayCheckboxes();
           editDisplayModal.style.display = "none";
         } else {
-          alert("Failed to delete display.");
+          const error = await response.json();
+          alert("Failed to delete display: " + error.message);
         }
       });
 
