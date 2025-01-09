@@ -55,13 +55,6 @@
     "password": "ivan",
     "displays": [
       {
-        "id": 1735325651892,
-        "name": "marko",
-        "location": "marko",
-        "resolution": "marko",
-        "videoLink": "https://belgrand-player.nbg1.your-objectstorage.com/belgrand-player/user/videos/ivan/1735620209693_aaaa.mp4"
-      },
-      {
         "id": 1735402661002,
         "name": "TEST",
         "location": "test",
@@ -124,12 +117,6 @@
         "name": "displej",
         "location": "teslic",
         "resolution": "1208x720"
-      },
-      {
-        "id": 1735325651892,
-        "name": "marko",
-        "location": "marko",
-        "resolution": "marko"
       }
     ]
   },
@@ -141,49 +128,30 @@
     "displays": []
   },
   {
-    "id": 1735495629000,
-    "name": "BELGRAND",
-    "email": "Belgrand@gmail.com",
-    "password": "belgrand",
+    "id": 1736441972394,
+    "name": "Milan",
+    "email": "milan@gmail.com",
+    "password": "milan",
     "displays": [
-      {
-        "id": 1735402661002,
-        "name": "TEST",
-        "location": "test",
-        "resolution": "123x123"
-      },
       {
         "id": 1735402858197,
-        "name": "TEST",
-        "location": "test",
-        "resolution": "123x123"
+        "name": "TESLIC DISPLEJ 2",
+        "location": "testtest",
+        "resolution": "123x123123",
+        "videoLink": "https://belgrand-player.nbg1.your-objectstorage.com/belgrand-player/user/videos/Milan/1736442137042_test.mp4"
       },
       {
-        "id": 1735403132875,
-        "name": "TEST",
-        "location": "test",
-        "resolution": "123x123"
+        "id": 1736441929441,
+        "name": "BELGRAND TEST DISPLEJ",
+        "location": "TESLIC",
+        "resolution": "1280X1080",
+        "videoLink": "https://belgrand-player.nbg1.your-objectstorage.com/belgrand-player/user/videos/Milan/1736442137042_test.mp4"
       }
-    ]
-  },
-  {
-    "id": 1735962332452,
-    "name": "milan 2",
-    "email": "milan@gmail.com",
-    "password": "milan3d",
-    "displays": [
-      {
-        "id": 1735323897146,
-        "name": "displej aa",
-        "location": "teslic aa",
-        "resolution": "1208x720 a"
-      },
-      {
-        "id": 1735324699747,
-        "name": "marko",
-        "location": "marko",
-        "resolution": "marko"
-      }
+    ],
+    "videos": [
+      "https://belgrand-player.nbg1.your-objectstorage.com/belgrand-player/user/videos/Milan/1736442052085_crgda5ffc9i91.mp4",
+      "https://belgrand-player.nbg1.your-objectstorage.com/belgrand-player/user/videos/Milan/1736442115027_WhatsApp_Video_2023-01-24_at_23.08.39.mp4",
+      "https://belgrand-player.nbg1.your-objectstorage.com/belgrand-player/user/videos/Milan/1736442137042_test.mp4"
     ]
   }
 ]

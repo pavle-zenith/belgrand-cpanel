@@ -458,6 +458,53 @@ app.get('/client/getCurrentVideo/:clientId/:displayId', async (req, res) => {
   }
 });
 
+// **New Endpoint: Edit User**
+app.post('/edit-user', (req, res) => {
+  const { id, name, email, password, displayIds } = req.body;
+
+  if (!id || !name || !email || !password || !Array.isArray(displayIds)) {
+    return res.status(400).send({ message: 'All fields are required and displayIds must be an array.' });
+  }
+
+  const clients = readJson(clientFile);
+  const clientIndex = clients.findIndex((c) => c.id === Number(id));
+
+  if (clientIndex === -1) {
+    return res.status(404).send({ message: 'User not found.' });
+  }
+
+  const displays = readJson(displayFile);
+  const assignedDisplays = displays.filter((display) => displayIds.includes(display.id));
+
+  // Update user details
+  clients[clientIndex].name = name;
+  clients[clientIndex].email = email;
+  clients[clientIndex].password = password;
+  clients[clientIndex].displays = assignedDisplays;
+
+  writeJson(clientFile, clients);
+
+  res.status(200).send({ message: 'User updated successfully.' });
+});
+
+// **New Endpoint: Delete User**
+app.delete('/delete-user/:id', (req, res) => {
+  const { id } = req.params;
+
+  const clients = readJson(clientFile);
+  const clientIndex = clients.findIndex((c) => c.id === Number(id));
+
+  if (clientIndex === -1) {
+    return res.status(404).send({ message: 'User not found.' });
+  }
+
+  // Remove user from the list
+  const [deletedUser] = clients.splice(clientIndex, 1);
+  writeJson(clientFile, clients);
+
+  res.status(200).send({ message: 'User deleted successfully.', deletedUser });
+});
+
 // Start the server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));

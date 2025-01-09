@@ -12,12 +12,6 @@
     "resolution": "marko"
   },
   {
-    "id": 1735325651892,
-    "name": "marko",
-    "location": "marko",
-    "resolution": "marko"
-  },
-  {
     "id": 1735402661002,
     "name": "TEST",
     "location": "test",
@@ -25,14 +19,20 @@
   },
   {
     "id": 1735402858197,
-    "name": "TEST",
-    "location": "test",
-    "resolution": "123x123"
+    "name": "TESLIC DISPLEJ 2",
+    "location": "testtest",
+    "resolution": "123x123123"
   },
   {
     "id": 1735403132875,
     "name": "TEST",
     "location": "test",
     "resolution": "123x123"
+  },
+  {
+    "id": 1736441929441,
+    "name": "BELGRAND TEST DISPLEJ",
+    "location": "TESLIC",
+    "resolution": "1280X1080"
   }
 ]

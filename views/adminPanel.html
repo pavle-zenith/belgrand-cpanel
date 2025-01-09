@@ -132,7 +132,7 @@
         background: white;
         padding: 20px;
         border-radius: 8px;
-        max-width: 400px;
+        max-width: 500px;
         width: 100%;
       }
       .modal-header {
@@ -172,6 +172,21 @@
       .stream-link {
         color: #1976d2;
         text-decoration: none;
+      }
+      /* Styles for Edit User Modal */
+      #editUserModal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        justify-content: center;
+        align-items: center;
+      }
+      #editUserModal .modal-content {
+        max-width: 500px;
       }
     </style>
   </head>
@@ -260,6 +275,34 @@
       </div>
     </div>
 
+    <!-- New Modal: Edit User -->
+    <div class="modal" id="editUserModal">
+      <div class="modal-content">
+        <div class="modal-header">Edit User</div>
+        <div class="form-field">
+          <label for="edit-username">Username</label>
+          <input type="text" id="edit-username" placeholder="Enter username" />
+        </div>
+        <div class="form-field">
+          <label for="edit-user-password">Password</label>
+          <input type="password" id="edit-user-password" placeholder="Enter password" />
+        </div>
+        <div class="form-field">
+          <label for="edit-user-email">Email</label>
+          <input type="email" id="edit-user-email" placeholder="Enter email" />
+        </div>
+        <div class="form-field">
+          <label for="edit-user-displays">Assign Displays</label>
+          <div id="editUserDisplayCheckboxes"></div>
+        </div>
+        <div class="modal-actions">
+          <button class="button" id="saveUserChanges">Save</button>
+          <button class="button" id="deleteUserButton">Delete</button>
+          <button class="button" id="closeUserModal">Cancel</button>
+        </div>
+      </div>
+    </div>
+
     <footer>Belgrand</footer>
 
     <script>
@@ -274,6 +317,16 @@
       let selectedDisplayId = null;
       let selectedUserId = null;
 
+      // **New Elements for Edit User Modal**
+      const editUserModal = document.getElementById("editUserModal");
+      const editUsername = document.getElementById("edit-username");
+      const editUserPassword = document.getElementById("edit-user-password");
+      const editUserEmail = document.getElementById("edit-user-email");
+      const editUserDisplayCheckboxes = document.getElementById("editUserDisplayCheckboxes");
+      const saveUserChanges = document.getElementById("saveUserChanges");
+      const deleteUserButton = document.getElementById("deleteUserButton");
+      const closeUserModal = document.getElementById("closeUserModal");
+
       // Load Users
       const loadUsers = async () => {
         const response = await fetch("/clients");
@@ -283,7 +336,10 @@
         users.forEach((user) => {
           const div = document.createElement("div");
           div.className = "list-item";
-          div.innerHTML = `<i class="material-icons">person</i>${user.name}`;
+          div.innerHTML = `<span><i class="material-icons">person</i>${user.name}</span>
+                          <div>
+                            <button class="button" onclick="openEditUserModal(${user.id})">Edit User</button>
+                          </div>`;
           div.dataset.userId = user.id;
           div.addEventListener("click", () => {
             document
@@ -386,6 +442,22 @@
             <label for="display-${display.id}">${display.name} (${display.resolution})</label>
           `;
           displayCheckboxes.appendChild(div);
+        });
+      };
+
+      // Load Displays for Edit User Modal
+      const loadEditUserDisplayCheckboxes = async () => {
+        const response = await fetch("/displays");
+        const displays = await response.json();
+        editUserDisplayCheckboxes.innerHTML = ""; // Clear existing checkboxes
+        displays.forEach((display) => {
+          const div = document.createElement("div");
+          div.className = "form-field displaysCheckboxesFix";
+          div.innerHTML = `
+            <input type="checkbox" value="${display.id}" id="editDisplay-${display.id}">
+            <label for="editDisplay-${display.id}">${display.name} (${display.resolution})</label>
+          `;
+          editUserDisplayCheckboxes.appendChild(div);
         });
       };
 
@@ -549,10 +621,125 @@
         }
       });
 
-      // Close Modal
-      closeDisplayModal.addEventListener("click", () => {
-        editDisplayModal.style.display = "none";
+      // **New Function: Open Edit User Modal**
+      window.openEditUserModal = async (userId) => {
+        selectedUserId = userId;
+
+        // Fetch user data
+        const response = await fetch("/clients");
+        const users = await response.json();
+        const user = users.find((u) => u.id === userId);
+
+        if (!user) {
+          alert("User not found.");
+          return;
+        }
+
+        // Populate modal fields
+        editUsername.value = user.name;
+        editUserPassword.value = user.password;
+        editUserEmail.value = user.email;
+
+        // Load display checkboxes
+        await loadEditUserDisplayCheckboxes();
+
+        // Assign displays
+        const checkboxes = editUserDisplayCheckboxes.querySelectorAll("input[type='checkbox']");
+        checkboxes.forEach((checkbox) => {
+          if (user.displays.some((d) => d.id === Number(checkbox.value))) {
+            checkbox.checked = true;
+          } else {
+            checkbox.checked = false;
+          }
+        });
+
+        // Show modal
+        editUserModal.style.display = "flex";
+      };
+
+      // **New Function: Save Changes to User**
+      saveUserChanges.addEventListener("click", async () => {
+        const name = editUsername.value.trim();
+        const password = editUserPassword.value.trim();
+        const email = editUserEmail.value.trim();
+        const displayIds = Array.from(
+          editUserDisplayCheckboxes.querySelectorAll("input[type='checkbox']:checked")
+        ).map((checkbox) => parseInt(checkbox.value, 10));
+
+        if (!name || !password || !email) {
+          alert("Please fill in all user fields.");
+          return;
+        }
+
+        if (displayIds.length === 0) {
+          alert("Please assign at least one display to the user.");
+          return;
+        }
+
+        const response = await fetch("/edit-user", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: selectedUserId, name, email, password, displayIds }),
+        });
+
+        if (response.ok) {
+          alert("User updated successfully!");
+          editUserModal.style.display = "none";
+          await loadUsers();
+          await loadDisplayCheckboxes();
+        } else {
+          const error = await response.json();
+          alert("Failed to update user: " + error.message);
+        }
       });
+
+      // **New Function: Delete User**
+      deleteUserButton.addEventListener("click", async () => {
+        if (!selectedUserId) {
+          alert("No user selected.");
+          return;
+        }
+
+        const confirmDelete = confirm("Are you sure you want to delete this user?");
+        if (!confirmDelete) return;
+
+        const response = await fetch(`/delete-user/${selectedUserId}`, {
+          method: "DELETE",
+        });
+
+        if (response.ok) {
+          alert("User deleted successfully!");
+          editUserModal.style.display = "none";
+          await loadUsers();
+          await loadDisplayCheckboxes();
+        } else {
+          const error = await response.json();
+          alert("Failed to delete user: " + error.message);
+        }
+      });
+
+      // **New Function: Close User Modal**
+      closeUserModal.addEventListener("click", () => {
+        editUserModal.style.display = "none";
+      });
+
+      // Close Display Modal when clicking outside the modal content
+      window.onclick = function(event) {
+        if (event.target == editDisplayModal) {
+          editDisplayModal.style.display = "none";
+        }
+        if (event.target == editUserModal) {
+          editUserModal.style.display = "none";
+        }
+      };
+
+      // Close Display Modal with Escape key
+      window.onkeydown = function(event) {
+        if (event.key === "Escape") {
+          editDisplayModal.style.display = "none";
+          editUserModal.style.display = "none";
+        }
+      };
 
       // Initial Load
       loadUsers();
