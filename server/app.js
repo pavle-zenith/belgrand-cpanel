@@ -68,7 +68,7 @@ const upload = multer({ dest: 'uploads/' });
 
 // S3 Configuration
 const s3 = new AWS.S3({
-  endpoint: 'https://belgrand-player.nbg1.your-objectstorage.com',
+  endpoint: 'https://nbg1.your-objectstorage.com', // Ensure this matches your setup
   accessKeyId: '5M2CAZB41BS39E593X3R',
   secretAccessKey: 'qIb78jKe8aBS0ytXPWzkEIB0NFrWNLYbnVxMwnky',
   region: 'eu-central',
@@ -80,7 +80,7 @@ const s3 = new AWS.S3({
 });
 
 // Define the Hetzner Base URL
-const HETZNER_BASE_URL = 'https://belgrand-player.nbg1.your-objectstorage.com/belgrand-player/'; // Update if different
+const HETZNER_BASE_URL = 'https://nbg1.your-objectstorage.com/belgrand-player/'; // Corrected base URL
 
 // Upload Video to S3
 const uploadToS3 = (filePath, bucket, key) => {
@@ -100,7 +100,7 @@ const uploadToS3 = (filePath, bucket, key) => {
         (err, data) => {
           if (err) return reject(err);
           console.log(`Uploaded to S3: ${data.Location}`); // Debugging
-          resolve(data.Location);
+          resolve(data.Location); // data.Location includes the protocol
         }
       );
     });
@@ -388,30 +388,43 @@ app.post('/client/publish', async (req, res) => {
     return res.status(404).send({ message: 'Client not found.' });
   }
 
-  const clientName = client.name.replace(/\s+/g, '_');
-
   try {
-    // Correct the source key by removing any extra prefix
-    const sourceKey = videoUrl
-      .replace('https://belgrand-player.nbg1.your-objectstorage.com/', '')
-      .replace('belgrand-player/', ''); // Handle any redundant prefixes
+    console.log(`Original Video URL: ${videoUrl}`);
 
-    console.log(`Corrected Source Key: ${sourceKey}`);
+    // Ensure the videoUrl includes the protocol
+    let formattedVideoUrl = videoUrl;
+    if (!/^https?:\/\//i.test(videoUrl)) {
+      formattedVideoUrl = `https://${videoUrl}`;
+      console.warn(`Video URL missing protocol. Formatted Video URL: ${formattedVideoUrl}`);
+    }
 
-    // Construct the Hetzner-hosted video URL
-    const hetznerVideoUrl = `${HETZNER_BASE_URL}${sourceKey}`;
+    // Parse the videoUrl to extract the path after the base URL
+    const url = new URL(formattedVideoUrl);
+    const baseUrl = new URL(HETZNER_BASE_URL);
+    let pathAfterBase = url.pathname;
+
+    // Remove the base path from the video path to avoid duplication
+    if (pathAfterBase.startsWith(baseUrl.pathname)) {
+      pathAfterBase = pathAfterBase.substring(baseUrl.pathname.length);
+    } else {
+      // Handle cases where the path doesn't start with basePath
+      // Adjust as necessary based on your actual URL structure
+      // For example, if your bucket is part of the hostname:
+      // https://nbg1.your-objectstorage.com/belgrand-player/user/videos/...
+      pathAfterBase = pathAfterBase.replace(/^\/+/, ''); // Remove leading slashes
+    }
+
+    console.log(`Path after base URL: ${pathAfterBase}`);
+
+    // Construct the correct Hetzner-hosted video URL
+    const hetznerVideoUrl = `${HETZNER_BASE_URL}${pathAfterBase}`;
     console.log(`Hetzner Video URL: ${hetznerVideoUrl}`);
 
-    // Process each selected display
+    // Assign the video link to each selected display
     for (const displayId of displays) {
       const display = client.displays.find((d) => d.id === Number(displayId));
       if (display) {
-        const displayName = display.name.replace(/\s+/g, '_');
-        // Optionally, you can define a specific path or naming convention per display
-        // For now, we'll use the hetznerVideoUrl directly
-
         console.log(`Assigning Video to Display ID ${displayId}: ${hetznerVideoUrl}`);
-
         display.videoLink = hetznerVideoUrl;
       }
     }

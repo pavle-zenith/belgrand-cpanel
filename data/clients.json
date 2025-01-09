@@ -59,7 +59,7 @@
         "name": "TEST",
         "location": "test",
         "resolution": "123x123",
-        "videoLink": "https://belgrand-player.nbg1.your-objectstorage.com/belgrand-player/user/videos/ivan/1735620209693_aaaa.mp4"
+        "videoLink": "https://nbg1.your-objectstorage.com/belgrand-player/user/videos/ivan/1735963595383_crgda5ffc9i91.mp4"
       }
     ],
     "videos": [
@@ -75,7 +75,10 @@
       "https://belgrand-player.nbg1.your-objectstorage.com/belgrand-player/user/videos/ivan/1736053060039_crgda5ffc9i91.mp4",
       "https://belgrand-player.nbg1.your-objectstorage.com/belgrand-player/user/videos/ivan/1736053846916_crgda5ffc9i91.mp4",
       "https://belgrand-player.nbg1.your-objectstorage.com/belgrand-player/user/videos/ivan/1736054036169_crgda5ffc9i91.mp4",
-      "https://belgrand-player.nbg1.your-objectstorage.com/belgrand-player/user/videos/ivan/1736054199156_crgda5ffc9i91.mp4"
+      "https://belgrand-player.nbg1.your-objectstorage.com/belgrand-player/user/videos/ivan/1736054199156_crgda5ffc9i91.mp4",
+      "nbg1.your-objectstorage.com/belgrand-player/belgrand-player/user/videos/ivan/1736455565319_1736453347361_924.mp4",
+      "nbg1.your-objectstorage.com/belgrand-player/user/videos/ivan/1736455989360_1736453347361_924.mp4",
+      "nbg1.your-objectstorage.com/belgrand-player/user/videos/ivan/1736456225018_1736453347361_924.mp4"
     ]
   },
   {
@@ -121,13 +124,6 @@
     ]
   },
   {
-    "id": 1735493469918,
-    "name": "paja2",
-    "email": "paja@gmail.com",
-    "password": "paja2",
-    "displays": []
-  },
-  {
     "id": 1736441972394,
     "name": "Milan",
     "email": "milan@gmail.com",
@@ -152,6 +148,45 @@
       "https://belgrand-player.nbg1.your-objectstorage.com/belgrand-player/user/videos/Milan/1736442052085_crgda5ffc9i91.mp4",
       "https://belgrand-player.nbg1.your-objectstorage.com/belgrand-player/user/videos/Milan/1736442115027_WhatsApp_Video_2023-01-24_at_23.08.39.mp4",
       "https://belgrand-player.nbg1.your-objectstorage.com/belgrand-player/user/videos/Milan/1736442137042_test.mp4"
+    ]
+  },
+  {
+    "id": 1736456709655,
+    "name": "FINAL",
+    "email": "final@gmail.com",
+    "password": "FINAL",
+    "displays": [
+      {
+        "id": 1736441929441,
+        "name": "BELGRAND TEST DISPLEJ",
+        "location": "TESLIC",
+        "resolution": "1280X1080"
+      }
+    ],
+    "videos": [
+      "nbg1.your-objectstorage.com/belgrand-player/user/videos/FINAL/1736456757987_1736453347361_924.mp4"
+    ]
+  },
+  {
+    "id": 1736457313896,
+    "name": "belgrand",
+    "email": "belgrand@gmail.com",
+    "password": "123",
+    "displays": [
+      {
+        "id": 1736441929441,
+        "name": "BELGRAND TEST DISPLEJ",
+        "location": "TESLIC",
+        "resolution": "1280X1080",
+        "videoLink": "https://nbg1.your-objectstorage.com/belgrand-player/user/videos/belgrand/1736457515034_strawberry_1.mp4"
+      }
+    ],
+    "videos": [
+      "nbg1.your-objectstorage.com/belgrand-player/user/videos/belgrand/1736457401316_1736453347361_924.mp4",
+      "nbg1.your-objectstorage.com/belgrand-player/user/videos/belgrand/1736457466020_1736453347361_924.mp4",
+      "nbg1.your-objectstorage.com/belgrand-player/user/videos/belgrand/1736457480419_1736453347361_924.mp4",
+      "nbg1.your-objectstorage.com/belgrand-player/user/videos/belgrand/1736457515034_strawberry_1.mp4",
+      "nbg1.your-objectstorage.com/belgrand-player/user/videos/belgrand/1736457524438_strawberry_1.mp4"
     ]
   }
 ]
