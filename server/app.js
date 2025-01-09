@@ -9,7 +9,11 @@ const cors = require('cors'); // Import the cors package
 const app = express();
 
 // Apply CORS middleware to allow all origins
-app.use(cors()); // This will allow all CORS requests
+app.use(cors({ 
+  origin: '*', 
+  methods: ['GET','POST','PUT','DELETE','PATCH','OPTIONS'], 
+  allowedHeaders: ['Content-Type', 'Authorization'] 
+})); // This will allow all CORS requests
 
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, '../public')));
