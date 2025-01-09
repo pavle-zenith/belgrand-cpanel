@@ -52,21 +52,6 @@ const writeJson = (filePath, data) => {
   fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
 };
 
-// Ensure dummy data exists
-if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir);
-if (!fs.existsSync(adminFile)) {
-  writeJson(adminFile, [
-    { id: 1, name: 'Admin User', email: 'admin@test.com', password: 'admin123' },
-  ]);
-}
-if (!fs.existsSync(clientFile)) writeJson(clientFile, []);
-if (!fs.existsSync(displayFile)) {
-  writeJson(displayFile, [
-    { id: 1, name: 'Main Display', location: 'Lobby', resolution: '1920x1080' },
-    { id: 2, name: 'Secondary Display', location: 'Office', resolution: '1280x720' },
-  ]);
-}
-
 // Multer for file uploads
 const upload = multer({ dest: 'uploads/' });
 
