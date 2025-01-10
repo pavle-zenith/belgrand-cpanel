@@ -9,7 +9,7 @@ const cors = require('cors');
 
 const app = express();
 
-// Apply CORS middleware to allow all origins
+// Apply CORS middleware
 app.use(
   cors({
     origin: '*',
@@ -21,16 +21,15 @@ app.use(
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, '../public')));
 
-// Helmet for basic security
+// Helmet za osnovnu sigurnost
 app.use(
   helmet({
     contentSecurityPolicy: {
       directives: {
         "default-src": ["'self'"],
+        // Ako koristiš Google Fonts i slično, dodaj:
         "script-src": ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
         "style-src": ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-        // Note: You had duplicate "script-src" in your original code;
-        // keep whichever you need (with 'unsafe-inline' as you prefer).
         "script-src-attr": ["'unsafe-inline'"],
         "img-src": ["'self'", "data:"],
         "font-src": ["'self'", "https://fonts.gstatic.com"],
@@ -40,13 +39,13 @@ app.use(
   })
 );
 
-// Paths for JSON files
+// Putanje za JSON fajlove
 const dataDir = path.join(__dirname, '../data');
 const adminFile = path.join(dataDir, 'admins.json');
 const clientFile = path.join(dataDir, 'clients.json');
 const displayFile = path.join(dataDir, 'displays.json');
 
-// Utility functions
+// Funkcije za čitanje i pisanje JSON-a
 const readJson = (filePath) => {
   if (!fs.existsSync(filePath)) return [];
   return JSON.parse(fs.readFileSync(filePath, 'utf-8'));
@@ -56,7 +55,7 @@ const writeJson = (filePath, data) => {
   fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
 };
 
-// Ensure data directory/files exist
+// Osiguraj da data direktorijum i fajlovi postoje
 if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir);
 if (!fs.existsSync(adminFile)) {
   writeJson(adminFile, [
@@ -87,26 +86,26 @@ if (!fs.existsSync(displayFile)) {
   ]);
 }
 
-// Multer for file uploads
+// Multer za upload fajlova
 const upload = multer({ dest: 'uploads/' });
 
-// S3 Configuration (adjust to your environment)
+// Podesi S3 (primer za Hetzner Object Storage)
 const s3 = new AWS.S3({
-  endpoint: 'https://nbg1.your-objectstorage.com',
-  accessKeyId: 'YOUR_ACCESS_KEY',
-  secretAccessKey: 'YOUR_SECRET_KEY',
+  endpoint: 'https://nbg1.your-objectstorage.com', // Ensure this matches your setup
+  accessKeyId: '5M2CAZB41BS39E593X3R',
+  secretAccessKey: 'qIb78jKe8aBS0ytXPWzkEIB0NFrWNLYbnVxMwnky',
   region: 'eu-central',
   s3ForcePathStyle: true,
   signatureVersion: 'v4',
   httpOptions: {
-    rejectUnauthorized: false, // If using self-signed SSL
+    rejectUnauthorized: false,
   },
 });
 
-// Define the Hetzner Base URL (adjust to your bucket name/path)
+// Osnovni put do korpe
 const HETZNER_BASE_URL = 'https://nbg1.your-objectstorage.com/belgrand-player/';
 
-// Helper function to upload video to S3
+// Pomoćna funkcija za S3 upload
 const uploadToS3 = (filePath, bucket, key) => {
   console.log(`Uploading file to S3. Bucket: ${bucket}, Key: ${key}`);
   return new Promise((resolve, reject) => {
@@ -131,15 +130,14 @@ const uploadToS3 = (filePath, bucket, key) => {
   });
 };
 
-// ================== ROUTES ==================
+// =============== ROUTES ===============
 
-// --- Home route: Serve Login Page ---
+// Home ruta (login)
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '../views/login.html'));
 });
 
-// ================== LOGIN ==================
-// Now we only accept { username, password, role } and find matching admin/client
+// LOGIN
 app.post('/auth/login', (req, res) => {
   const { username, password, role } = req.body;
 
@@ -154,7 +152,7 @@ app.post('/auth/login', (req, res) => {
       return res.status(200).json({
         success: true,
         redirect: '/admin',
-        adminId: admin.id, // Return the admin ID for filtering
+        adminId: admin.id,
       });
     }
   }
@@ -174,7 +172,7 @@ app.post('/auth/login', (req, res) => {
   return res.status(401).json({ success: false, message: 'Invalid credentials' });
 });
 
-// ================== ADMIN / CLIENT PAGES ==================
+// ADMIN/CLIENT stranice
 app.get('/admin', (req, res) => {
   res.sendFile(path.join(__dirname, '../views/adminPanel.html'));
 });
@@ -183,7 +181,7 @@ app.get('/client', (req, res) => {
   res.sendFile(path.join(__dirname, '../views/clientPanel.html'));
 });
 
-// ================== GET DISPLAYS (Filtered by adminId) ==================
+// GET DISPLAYS (po adminId)
 app.get('/displays', (req, res) => {
   const adminId = parseInt(req.query.adminId, 10);
   if (!adminId) {
@@ -194,7 +192,7 @@ app.get('/displays', (req, res) => {
   res.json(displays);
 });
 
-// ================== GET CLIENTS (Filtered by adminId) ==================
+// GET CLIENTS (po adminId)
 app.get('/clients', (req, res) => {
   const adminId = parseInt(req.query.adminId, 10);
   if (!adminId) {
@@ -205,7 +203,7 @@ app.get('/clients', (req, res) => {
   res.json(clients);
 });
 
-// ================== CREATE DISPLAY ==================
+// CREATE DISPLAY
 app.post('/create-display', (req, res) => {
   const { adminId, name, location, resolution } = req.body;
   if (!adminId || !name || !location || !resolution) {
@@ -228,7 +226,7 @@ app.post('/create-display', (req, res) => {
   return res.status(201).json(newDisplay);
 });
 
-// ================== CREATE USER (CLIENT) ==================
+// CREATE USER (CLIENT)
 app.post('/create-user', (req, res) => {
   const { adminId, name, password, displayIds } = req.body;
   if (!adminId || !name || !password) {
@@ -236,7 +234,7 @@ app.post('/create-user', (req, res) => {
   }
 
   const allDisplays = readJson(displayFile);
-  // Only assign displays belonging to this admin
+  // Samo displejevi koji pripadaju tom adminu
   const assignedDisplays = Array.isArray(displayIds)
     ? allDisplays.filter((d) => displayIds.includes(d.id) && d.ownerId === adminId)
     : [];
@@ -244,7 +242,7 @@ app.post('/create-user', (req, res) => {
   const allClients = readJson(clientFile);
   const newClient = {
     id: Date.now(),
-    ownerId: adminId, // track the admin who created this user
+    ownerId: adminId,
     name,
     password,
     displays: assignedDisplays,
@@ -256,7 +254,7 @@ app.post('/create-user', (req, res) => {
   return res.status(201).json(newClient);
 });
 
-// ================== EDIT DISPLAY ==================
+// EDIT DISPLAY
 app.post('/edit-display', (req, res) => {
   const { adminId, id, name, location, resolution } = req.body;
   if (!adminId || !id || !name || !location || !resolution) {
@@ -271,7 +269,6 @@ app.post('/edit-display', (req, res) => {
     return res.status(404).json({ message: 'Display not found or you are not the owner.' });
   }
 
-  // Update display
   allDisplays[displayIndex].name = name;
   allDisplays[displayIndex].location = location;
   allDisplays[displayIndex].resolution = resolution;
@@ -280,8 +277,7 @@ app.post('/edit-display', (req, res) => {
   return res.status(200).json({ message: 'Display updated successfully.' });
 });
 
-// ================== DELETE DISPLAY ==================
-// We pass both adminId and displayId in the route to check ownership
+// DELETE DISPLAY
 app.delete('/delete-display/:adminId/:displayId', (req, res) => {
   const adminId = parseInt(req.params.adminId, 10);
   const displayId = parseInt(req.params.displayId, 10);
@@ -297,7 +293,7 @@ app.delete('/delete-display/:adminId/:displayId', (req, res) => {
   const [deleted] = allDisplays.splice(displayIndex, 1);
   writeJson(displayFile, allDisplays);
 
-  // Remove this display from any clients that have it
+  // Ukloni display iz bilo kog klijenta
   const allClients = readJson(clientFile);
   allClients.forEach((c) => {
     c.displays = c.displays.filter((d) => d.id !== displayId);
@@ -307,8 +303,8 @@ app.delete('/delete-display/:adminId/:displayId', (req, res) => {
   return res.status(200).json({ message: 'Display deleted.', deletedDisplay: deleted });
 });
 
-// ================== GET USER DISPLAYS ==================
-// (For loading assigned displays in the UI)
+// =============== RUTA KOJA JE VEĆ SLIČNA =================
+// GET USER DISPLAYS (ali ovde treba /user-displays/:id)
 app.get('/user-displays/:id', (req, res) => {
   const userId = parseInt(req.params.id, 10);
   const allClients = readJson(clientFile);
@@ -319,7 +315,7 @@ app.get('/user-displays/:id', (req, res) => {
   return res.json(user.displays || []);
 });
 
-// ================== EDIT USER (CLIENT) ==================
+// EDIT USER (CLIENT)
 app.post('/edit-user', (req, res) => {
   const { adminId, id, name, password, displayIds } = req.body;
   if (!adminId || !id || !name || !password || !Array.isArray(displayIds)) {
@@ -340,10 +336,10 @@ app.post('/edit-user', (req, res) => {
   const oldVideos = oldUser.videos || [];
   const oldDisplays = oldUser.displays || [];
 
-  // Filter only this admin's displays
+  // Filtriraj samo displejeve koji pripadaju ovom adminu
   const allDisplays = readJson(displayFile).filter((d) => d.ownerId === adminId);
 
-  // Reassign displays, preserving any videoLink
+  // Reassign displeje
   const assignedDisplays = allDisplays
     .filter((d) => displayIds.includes(d.id))
     .map((newDisplay) => {
@@ -353,11 +349,10 @@ app.post('/edit-user', (req, res) => {
         : { ...newDisplay };
     });
 
-  // Update user fields
   oldUser.name = name;
   oldUser.password = password;
   oldUser.displays = assignedDisplays;
-  oldUser.videos = oldVideos; // keep existing videos
+  oldUser.videos = oldVideos;
 
   allClients[clientIndex] = oldUser;
   writeJson(clientFile, allClients);
@@ -365,7 +360,7 @@ app.post('/edit-user', (req, res) => {
   return res.status(200).json({ message: 'User updated successfully.' });
 });
 
-// ================== DELETE USER (CLIENT) ==================
+// DELETE USER (CLIENT)
 app.delete('/delete-user/:adminId/:userId', (req, res) => {
   const adminId = parseInt(req.params.adminId, 10);
   const userId = parseInt(req.params.userId, 10);
@@ -384,12 +379,9 @@ app.delete('/delete-user/:adminId/:userId', (req, res) => {
   return res.status(200).json({ message: 'User deleted successfully.', deletedUser });
 });
 
-// ================== CLIENT VIDEO UPLOAD & MANAGEMENT ==================
-
-// Example endpoint to get display content by clientId (unchanged except you may want to check ownership)
+// GET CONTENT PRIMER (nije direktno vezano, samo primer)
 app.get('/client/content', (req, res) => {
   const { clientId } = req.query;
-
   if (!clientId) {
     return res.status(400).json({ message: 'Client ID is required.' });
   }
@@ -398,7 +390,6 @@ app.get('/client/content', (req, res) => {
   if (!client) {
     return res.status(404).json({ message: `Client ${clientId} not found.` });
   }
-  // Return minimal info about assigned displays
   const content = client.displays.map((d) => ({
     id: d.id,
     name: d.name,
@@ -409,7 +400,7 @@ app.get('/client/content', (req, res) => {
   return res.json(content);
 });
 
-// Upload Video to S3 (unchanged except for your environment needs)
+// Upload video
 app.post('/client/upload', upload.single('video'), async (req, res) => {
   try {
     const { clientId } = req.body;
@@ -437,7 +428,6 @@ app.post('/client/upload', upload.single('video'), async (req, res) => {
     const fileUrl = await uploadToS3(req.file.path, 'belgrand-player', videoKey);
     fs.unlinkSync(req.file.path);
 
-    // Save the uploaded video link to the client's JSON
     if (!client.videos) {
       client.videos = [];
     }
@@ -455,7 +445,7 @@ app.post('/client/upload', upload.single('video'), async (req, res) => {
   }
 });
 
-// Fetch Videos for a Client
+// GET Videos za klijenta
 app.get('/client/videos', (req, res) => {
   const { clientId } = req.query;
   if (!clientId) {
@@ -470,7 +460,7 @@ app.get('/client/videos', (req, res) => {
   res.json(client.videos || []);
 });
 
-// Publish Video to a Display
+// Publish Video
 app.post('/client/publish', async (req, res) => {
   const { clientId, displays, videoUrl } = req.body;
   if (!clientId || !displays || !videoUrl) {
@@ -497,7 +487,6 @@ app.post('/client/publish', async (req, res) => {
     const baseUrlObj = new URL(HETZNER_BASE_URL);
     let pathAfterBase = urlObj.pathname;
 
-    // Remove the base path if it's repeated
     if (pathAfterBase.startsWith(baseUrlObj.pathname)) {
       pathAfterBase = pathAfterBase.substring(baseUrlObj.pathname.length);
     } else {
@@ -507,7 +496,6 @@ app.post('/client/publish', async (req, res) => {
     const hetznerVideoUrl = `${HETZNER_BASE_URL}${pathAfterBase}`;
     console.log(`Hetzner Video URL: ${hetznerVideoUrl}`);
 
-    // Assign the videoLink to each selected display
     for (const displayId of displays) {
       const disp = client.displays.find((d) => d.id === Number(displayId));
       if (disp) {
@@ -525,7 +513,7 @@ app.post('/client/publish', async (req, res) => {
   }
 });
 
-// Get Current Video for a Display (then redirect)
+// GET Current Video i redirect
 app.get('/client/getCurrentVideo/:clientId/:displayId', async (req, res) => {
   const { clientId, displayId } = req.params;
   const allClients = readJson(clientFile);
@@ -549,7 +537,25 @@ app.get('/client/getCurrentVideo/:clientId/:displayId', async (req, res) => {
   }
 });
 
-// Start the server
+// ================ NOVI ROUTE ZA /client/displays =================
+app.get('/client/displays', (req, res) => {
+  const { clientId } = req.query;
+  if (!clientId) {
+    return res.status(400).json({ message: 'Nedostaje clientId parametar.' });
+  }
+
+  const allClients = readJson(clientFile);
+  const client = allClients.find((c) => c.id === Number(clientId));
+  if (!client) {
+    return res.status(404).json({ message: 'Klijent nije pronađen.' });
+  }
+
+  // Vraćamo listu displejeva koje je ovaj klijent dobio
+  // (podrazumeva se da je u clients.json svaki klijent dobio "displays" niz)
+  res.json(client.displays || []);
+});
+
+// Pokretanje servera
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
