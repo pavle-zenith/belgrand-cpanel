@@ -52,6 +52,21 @@ const writeJson = (filePath, data) => {
   fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
 };
 
+// Ensure dummy data exists
+if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir);
+if (!fs.existsSync(adminFile)) {
+  writeJson(adminFile, [
+    { id: 1, name: 'Admin User', email: 'admin@test.com', password: 'admin123' },
+  ]);
+}
+if (!fs.existsSync(clientFile)) writeJson(clientFile, []);
+if (!fs.existsSync(displayFile)) {
+  writeJson(displayFile, [
+    { id: 1, name: 'Main Display', location: 'Lobby', resolution: '1920x1080' },
+    { id: 2, name: 'Secondary Display', location: 'Office', resolution: '1280x720' },
+  ]);
+}
+
 // Multer for file uploads
 const upload = multer({ dest: 'uploads/' });
 
@@ -465,7 +480,9 @@ app.post('/edit-user', (req, res) => {
   const { id, name, email, password, displayIds } = req.body;
 
   if (!id || !name || !email || !password || !Array.isArray(displayIds)) {
-    return res.status(400).send({ message: 'All fields are required and displayIds must be an array.' });
+    return res
+      .status(400)
+      .send({ message: 'All fields are required and displayIds must be an array.' });
   }
 
   const clients = readJson(clientFile);
@@ -475,15 +492,40 @@ app.post('/edit-user', (req, res) => {
     return res.status(404).send({ message: 'User not found.' });
   }
 
-  const displays = readJson(displayFile);
-  const assignedDisplays = displays.filter((display) => displayIds.includes(display.id));
+  // Grab the old user object
+  const oldUser = clients[clientIndex];
 
-  // Update user details
-  clients[clientIndex].name = name;
-  clients[clientIndex].email = email;
-  clients[clientIndex].password = password;
-  clients[clientIndex].displays = assignedDisplays;
+  // Preserve the old videos array
+  const oldVideos = oldUser.videos || [];
 
+  // Get the original displays assigned to the user (including videoLink)
+  const oldDisplays = oldUser.displays || [];
+
+  // Pull the full list of displays from 'displays.json'
+  const allDisplays = readJson(displayFile);
+
+  // Build a new array of "assignedDisplays" based on the incoming displayIds
+  // but preserve any existing videoLink from the oldDisplays if it exists
+  const assignedDisplays = allDisplays
+    .filter((display) => displayIds.includes(display.id))
+    .map((newDisplay) => {
+      // If the user already had this display, preserve its videoLink
+      const matchingOldDisplay = oldDisplays.find((d) => d.id === newDisplay.id);
+
+      return matchingOldDisplay
+        ? { ...newDisplay, videoLink: matchingOldDisplay.videoLink }
+        : { ...newDisplay }; // no videoLink if it's a brand-new assignment
+    });
+
+  // Now update the user fields
+  oldUser.name = name;
+  oldUser.email = email;
+  oldUser.password = password;
+  oldUser.displays = assignedDisplays;
+  oldUser.videos = oldVideos; // Keep the old videos array
+
+  // Save the updated user back to the clients array
+  clients[clientIndex] = oldUser;
   writeJson(clientFile, clients);
 
   res.status(200).send({ message: 'User updated successfully.' });
