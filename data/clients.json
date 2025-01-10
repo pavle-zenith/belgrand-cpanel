@@ -1,8 +1,8 @@
 [
   {
     "id": 1735323914537,
+    "ownerId": 1,
     "name": "marko",
-    "email": "marko@gmail.com",
     "password": "marko",
     "displays": [
       {
@@ -11,12 +11,13 @@
         "location": "teslic",
         "resolution": "1208x720"
       }
-    ]
+    ],
+    "videos": []
   },
   {
     "id": 1735402691602,
+    "ownerId": 1,
     "name": "pavle",
-    "email": "pavlem.dev@gmail.com",
     "password": "pavle",
     "displays": [
       {
@@ -26,73 +27,13 @@
         "resolution": "1208x720",
         "videoLink": "https://belgrand-player.nbg1.your-objectstorage.com/uploaded_video.mp4"
       }
-    ]
-  },
-  {
-    "id": 1735402848159,
-    "name": "ivan",
-    "email": "ivan@gmail.com",
-    "password": "ivan",
-    "displays": [
-      {
-        "id": 1735402661002,
-        "name": "TEST",
-        "location": "test",
-        "resolution": "123x123",
-        "videoLink": "https://nbg1.your-objectstorage.com/belgrand-player/user/videos/ivan/1735963595383_crgda5ffc9i91.mp4"
-      }
     ],
-    "videos": [
-      "https://belgrand-player.nbg1.your-objectstorage.com/belgrand-player/user/videos/ivan/1735619367972_es.mp4",
-      "https://belgrand-player.nbg1.your-objectstorage.com/belgrand-player/user/videos/ivan/1735619769360_es.mp4",
-      "https://belgrand-player.nbg1.your-objectstorage.com/belgrand-player/user/videos/ivan/1735620209693_aaaa.mp4",
-      "https://belgrand-player.nbg1.your-objectstorage.com/belgrand-player/user/videos/ivan/1735620470820_aaaa.mp4",
-      "https://belgrand-player.nbg1.your-objectstorage.com/belgrand-player/user/videos/ivan/1735640670963_aaaa.mp4",
-      "nbg1.your-objectstorage.com/belgrand-player/belgrand-player/user/videos/ivan/1735645717762_strawberry_1.mp4",
-      "nbg1.your-objectstorage.com/belgrand-player/belgrand-player/user/videos/ivan/1735646683837_strawberry_1.mp4",
-      "https://belgrand-player.nbg1.your-objectstorage.com/belgrand-player/user/videos/ivan/1735963295890_crgda5ffc9i91.mp4",
-      "https://belgrand-player.nbg1.your-objectstorage.com/belgrand-player/user/videos/ivan/1735963595383_crgda5ffc9i91.mp4",
-      "https://belgrand-player.nbg1.your-objectstorage.com/belgrand-player/user/videos/ivan/1736053060039_crgda5ffc9i91.mp4",
-      "https://belgrand-player.nbg1.your-objectstorage.com/belgrand-player/user/videos/ivan/1736053846916_crgda5ffc9i91.mp4",
-      "https://belgrand-player.nbg1.your-objectstorage.com/belgrand-player/user/videos/ivan/1736054036169_crgda5ffc9i91.mp4",
-      "https://belgrand-player.nbg1.your-objectstorage.com/belgrand-player/user/videos/ivan/1736054199156_crgda5ffc9i91.mp4",
-      "nbg1.your-objectstorage.com/belgrand-player/belgrand-player/user/videos/ivan/1736455565319_1736453347361_924.mp4",
-      "nbg1.your-objectstorage.com/belgrand-player/user/videos/ivan/1736455989360_1736453347361_924.mp4",
-      "nbg1.your-objectstorage.com/belgrand-player/user/videos/ivan/1736456225018_1736453347361_924.mp4"
-    ]
-  },
-  {
-    "id": 1735403141980,
-    "name": "ivan",
-    "email": "ivan@gmail.com",
-    "password": "asd",
-    "displays": [
-      {
-        "id": 1735323897146,
-        "name": "displej",
-        "location": "teslic",
-        "resolution": "1208x720",
-        "videoLink": "https://belgrand-player.nbg1.your-objectstorage.com/uploaded_video.mp4"
-      },
-      {
-        "id": 1735324699747,
-        "name": "marko",
-        "location": "marko",
-        "resolution": "marko",
-        "videoLink": "https://belgrand-player.nbg1.your-objectstorage.com/uploaded_video.mp4"
-      },
-      {
-        "id": 1735403132875,
-        "name": "TEST",
-        "location": "test",
-        "resolution": "123x123"
-      }
-    ]
+    "videos": []
   },
   {
     "id": 1735493058167,
+    "ownerId": 1,
     "name": "paja",
-    "email": "paja@gmail.com",
     "password": "paja",
     "displays": [
       {
@@ -101,12 +42,13 @@
         "location": "teslic",
         "resolution": "1208x720"
       }
-    ]
+    ],
+    "videos": []
   },
   {
     "id": 1736441972394,
+    "ownerId": 1,
     "name": "Milan",
-    "email": "milan@gmail.com",
     "password": "milan",
     "displays": [
       {
@@ -132,8 +74,8 @@
   },
   {
     "id": 1736456709655,
+    "ownerId": 1,
     "name": "FINAL",
-    "email": "final@gmail.com",
     "password": "FINAL",
     "displays": [
       {
@@ -149,12 +91,20 @@
   },
   {
     "id": 1736457313896,
+    "ownerId": 1,
     "name": "belgrand",
-    "email": "belgrand@gmail.com",
     "password": "123",
     "displays": [
       {
+        "id": 1735403132875,
+        "ownerId": 1,
+        "name": "TEST",
+        "location": "test",
+        "resolution": "123x123"
+      },
+      {
         "id": 1736441929441,
+        "ownerId": 1,
         "name": "BELGRAND TEST DISPLEJ",
         "location": "TESLIC",
         "resolution": "1280X1080",
@@ -168,5 +118,28 @@
       "nbg1.your-objectstorage.com/belgrand-player/user/videos/belgrand/1736457515034_strawberry_1.mp4",
       "nbg1.your-objectstorage.com/belgrand-player/user/videos/belgrand/1736457524438_strawberry_1.mp4"
     ]
+  },
+  {
+    "id": 1736520885109,
+    "ownerId": 1,
+    "name": "belgrand 2",
+    "password": "belgrand",
+    "displays": [
+      {
+        "id": 1735323897146,
+        "ownerId": 1,
+        "name": "displej aa",
+        "location": "teslic aa",
+        "resolution": "1208x720 a"
+      },
+      {
+        "id": 1735324699747,
+        "ownerId": 1,
+        "name": "marko",
+        "location": "marko",
+        "resolution": "marko"
+      }
+    ],
+    "videos": []
   }
 ]

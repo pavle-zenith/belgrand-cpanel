@@ -1,36 +1,42 @@
 [
   {
     "id": 1735323897146,
+    "ownerId": 1,
     "name": "displej aa",
     "location": "teslic aa",
     "resolution": "1208x720 a"
   },
   {
     "id": 1735324699747,
+    "ownerId": 1,
     "name": "marko",
     "location": "marko",
     "resolution": "marko"
   },
   {
     "id": 1735402661002,
+    "ownerId": 1,
     "name": "TEST",
     "location": "test",
     "resolution": "123x123"
   },
   {
     "id": 1735402858197,
+    "ownerId": 1,
     "name": "TESLIC DISPLEJ 2",
     "location": "testtest",
     "resolution": "123x123123"
   },
   {
     "id": 1735403132875,
+    "ownerId": 1,
     "name": "TEST",
     "location": "test",
     "resolution": "123x123"
   },
   {
     "id": 1736441929441,
+    "ownerId": 1,
     "name": "BELGRAND TEST DISPLEJ",
     "location": "TESLIC",
     "resolution": "1280X1080"

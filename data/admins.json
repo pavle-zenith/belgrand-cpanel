@@ -1,14 +1,11 @@
 [
-    {
-      "id": 1,
-      "name": "Test Admin",
-      "email": "admin@test.com",
-      "password": "admin123"
-    },
-    {
-      "id": 2,
-      "name": "sasa",
-      "email": "sasa@gmail.com",
-      "password": "Sasa!312"
-    }
-  ]
+  {
+    "id": 1,
+    "name": "belgrandAdmin",
+    "password": "belgrand2024"
+  },{
+    "id": 2,
+    "name": "test2",
+    "password": "belgrand2024"
+  }
+]
