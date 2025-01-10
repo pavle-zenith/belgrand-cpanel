@@ -1,10 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Login</title>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap"
+    rel="stylesheet"
+  />
   <style>
     body {
       font-family: 'Roboto', sans-serif;
@@ -31,6 +34,7 @@
       width: 100%;
       max-width: 400px;
       margin: auto;
+      margin-top: 60px;
     }
     .login-container h2 {
       margin-bottom: 24px;
@@ -45,6 +49,7 @@
     .form-field label {
       margin-bottom: 8px;
       color: #555;
+      font-weight: 500;
     }
     .form-field input,
     .form-field select {
@@ -62,6 +67,7 @@
       text-align: center;
       font-size: 16px;
       width: 100%;
+      margin-top: 10px;
     }
     .button:hover {
       background-color: #155a9c;
@@ -70,6 +76,7 @@
       color: red;
       font-size: 14px;
       margin-top: 10px;
+      text-align: center;
     }
     footer {
       background-color: #1976d2;
@@ -85,14 +92,27 @@
   <header>CONTROL PANEL</header>
   <div class="login-container">
     <h2>Login</h2>
+    <!-- Login Form -->
     <form id="loginForm">
       <div class="form-field">
-        <label for="email">Email</label>
-        <input type="email" id="email" name="email" placeholder="Enter your email" required>
+        <label for="username">Username</label>
+        <input 
+          type="text" 
+          id="username" 
+          name="username" 
+          placeholder="Enter your username" 
+          required 
+        />
       </div>
       <div class="form-field">
         <label for="password">Password</label>
-        <input type="password" id="password" name="password" placeholder="Enter your password" required>
+        <input 
+          type="password" 
+          id="password" 
+          name="password" 
+          placeholder="Enter your password" 
+          required 
+        />
       </div>
       <div class="form-field">
         <label for="role">Role</label>
@@ -106,41 +126,50 @@
     </form>
   </div>
   <footer>Belgrand</footer>
+
   <script>
     const loginForm = document.getElementById('loginForm');
     const loginError = document.getElementById('loginError');
 
     loginForm.addEventListener('submit', async (e) => {
-  e.preventDefault();
+      e.preventDefault();
 
-  const formData = new FormData(loginForm);
-  const data = {
-    email: formData.get('email'),
-    password: formData.get('password'),
-    role: formData.get('role'),
-  };
+      const formData = new FormData(loginForm);
+      const data = {
+        username: formData.get('username'),
+        password: formData.get('password'),
+        role: formData.get('role'),
+      };
 
-  try {
-    const response = await fetch('/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    });
+      try {
+        const response = await fetch('/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        });
 
-    const result = await response.json();
-    if (response.ok) {
-      if (data.role === 'client' && result.clientId) {
-        // Store clientId in localStorage
-        localStorage.setItem('clientId', result.clientId);
+        const result = await response.json();
+        if (response.ok && result.success) {
+          // Clear any existing error
+          loginError.textContent = '';
+
+          // Store ID depending on the role
+          if (data.role === 'admin' && result.adminId) {
+            localStorage.setItem('adminId', result.adminId);
+          } else if (data.role === 'client' && result.clientId) {
+            localStorage.setItem('clientId', result.clientId);
+          }
+
+          // Redirect
+          window.location.href = result.redirect;
+        } else {
+          // Show error returned by the server
+          loginError.textContent = result.message || 'Invalid credentials.';
+        }
+      } catch (error) {
+        loginError.textContent = 'An error occurred. Please try again.';
       }
-      window.location.href = result.redirect;
-    } else {
-      loginError.textContent = result.message;
-    }
-  } catch (error) {
-    loginError.textContent = 'An error occurred. Please try again.';
-  }
-});
+    });
   </script>
 </body>
 </html>
