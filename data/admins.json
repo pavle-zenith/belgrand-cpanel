@@ -5,4 +5,10 @@
       "email": "admin@test.com",
       "password": "admin123"
     }
+        {
+      "id": 2,
+      "name": "sasa,
+      "email": "sasa@gmail.com",
+      "password": "Sasa!312"
+    }
   ]
