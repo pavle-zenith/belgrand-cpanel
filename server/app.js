@@ -5,15 +5,18 @@ const multer = require('multer');
 const AWS = require('aws-sdk');
 const fs = require('fs');
 const path = require('path');
-const cors = require('cors'); // Import the cors package
+const cors = require('cors');
+
 const app = express();
 
 // Apply CORS middleware to allow all origins
-app.use(cors({ 
-  origin: '*', 
-  methods: ['GET','POST','PUT','DELETE','PATCH','OPTIONS'], 
-  allowedHeaders: ['Content-Type', 'Authorization'] 
-})); // This will allow all CORS requests
+app.use(
+  cors({
+    origin: '*',
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  })
+);
 
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, '../public')));
@@ -26,11 +29,12 @@ app.use(
         "default-src": ["'self'"],
         "script-src": ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
         "style-src": ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-        "script-src": ["'self'", "'unsafe-inline'"], // Allow inline scripts
-        "script-src-attr": ["'unsafe-inline'"], // Allow inline event handlers
+        // Note: You had duplicate "script-src" in your original code;
+        // keep whichever you need (with 'unsafe-inline' as you prefer).
+        "script-src-attr": ["'unsafe-inline'"],
         "img-src": ["'self'", "data:"],
         "font-src": ["'self'", "https://fonts.gstatic.com"],
-        "media-src": ["'self'", "blob:"], // Allow blob: URLs for media
+        "media-src": ["'self'", "blob:"],
       },
     },
   })
@@ -52,43 +56,59 @@ const writeJson = (filePath, data) => {
   fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
 };
 
-// Ensure dummy data exists
+// Ensure data directory/files exist
 if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir);
 if (!fs.existsSync(adminFile)) {
   writeJson(adminFile, [
-    { id: 1, name: 'Admin User', email: 'admin@test.com', password: 'admin123' },
+    {
+      id: 1,
+      name: 'TestAdmin',
+      password: 'admin123',
+    },
   ]);
 }
 if (!fs.existsSync(clientFile)) writeJson(clientFile, []);
 if (!fs.existsSync(displayFile)) {
   writeJson(displayFile, [
-    { id: 1, name: 'Main Display', location: 'Lobby', resolution: '1920x1080' },
-    { id: 2, name: 'Secondary Display', location: 'Office', resolution: '1280x720' },
+    {
+      id: 1,
+      ownerId: 1,
+      name: 'Main Display',
+      location: 'Lobby',
+      resolution: '1920x1080',
+    },
+    {
+      id: 2,
+      ownerId: 1,
+      name: 'Secondary Display',
+      location: 'Office',
+      resolution: '1280x720',
+    },
   ]);
 }
 
 // Multer for file uploads
 const upload = multer({ dest: 'uploads/' });
 
-// S3 Configuration
+// S3 Configuration (adjust to your environment)
 const s3 = new AWS.S3({
-  endpoint: 'https://nbg1.your-objectstorage.com', // Ensure this matches your setup
-  accessKeyId: '5M2CAZB41BS39E593X3R',
-  secretAccessKey: 'qIb78jKe8aBS0ytXPWzkEIB0NFrWNLYbnVxMwnky',
+  endpoint: 'https://nbg1.your-objectstorage.com',
+  accessKeyId: 'YOUR_ACCESS_KEY',
+  secretAccessKey: 'YOUR_SECRET_KEY',
   region: 'eu-central',
   s3ForcePathStyle: true,
   signatureVersion: 'v4',
   httpOptions: {
-    rejectUnauthorized: false, // Ignore SSL for self-signed certificates
+    rejectUnauthorized: false, // If using self-signed SSL
   },
 });
 
-// Define the Hetzner Base URL
-const HETZNER_BASE_URL = 'https://nbg1.your-objectstorage.com/belgrand-player/'; // Corrected base URL
+// Define the Hetzner Base URL (adjust to your bucket name/path)
+const HETZNER_BASE_URL = 'https://nbg1.your-objectstorage.com/belgrand-player/';
 
-// Upload Video to S3
+// Helper function to upload video to S3
 const uploadToS3 = (filePath, bucket, key) => {
-  console.log(`Uploading file to S3. Bucket: ${bucket}, Key: ${key}`); // Debugging
+  console.log(`Uploading file to S3. Bucket: ${bucket}, Key: ${key}`);
   return new Promise((resolve, reject) => {
     fs.readFile(filePath, (err, data) => {
       if (err) return reject(err);
@@ -101,43 +121,60 @@ const uploadToS3 = (filePath, bucket, key) => {
           ACL: 'public-read',
           ContentType: 'video/mp4',
         },
-        (err, data) => {
-          if (err) return reject(err);
-          console.log(`Uploaded to S3: ${data.Location}`); // Debugging
-          resolve(data.Location); // data.Location includes the protocol
+        (s3Err, result) => {
+          if (s3Err) return reject(s3Err);
+          console.log(`Uploaded to S3: ${result.Location}`);
+          resolve(result.Location);
         }
       );
     });
   });
 };
 
-// Routes
+// ================== ROUTES ==================
+
+// --- Home route: Serve Login Page ---
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '../views/login.html'));
 });
 
+// ================== LOGIN ==================
+// Now we only accept { username, password, role } and find matching admin/client
 app.post('/auth/login', (req, res) => {
-  const { email, password, role } = req.body;
+  const { username, password, role } = req.body;
+
+  if (!username || !password || !role) {
+    return res.status(400).json({ success: false, message: 'Missing credentials or role.' });
+  }
 
   if (role === 'admin') {
     const admins = readJson(adminFile);
-    const admin = admins.find((a) => a.email === email && a.password === password);
+    const admin = admins.find((a) => a.name === username && a.password === password);
     if (admin) {
-      return res.status(200).send({ success: true, redirect: '/admin' });
+      return res.status(200).json({
+        success: true,
+        redirect: '/admin',
+        adminId: admin.id, // Return the admin ID for filtering
+      });
     }
   }
 
   if (role === 'client') {
     const clients = readJson(clientFile);
-    const client = clients.find((c) => c.email === email && c.password === password);
+    const client = clients.find((c) => c.name === username && c.password === password);
     if (client) {
-      return res.status(200).send({ success: true, redirect: '/client', clientId: client.id });
+      return res.status(200).json({
+        success: true,
+        redirect: '/client',
+        clientId: client.id,
+      });
     }
   }
 
-  return res.status(401).send({ success: false, message: 'Invalid credentials' });
+  return res.status(401).json({ success: false, message: 'Invalid credentials' });
 });
 
+// ================== ADMIN / CLIENT PAGES ==================
 app.get('/admin', (req, res) => {
   res.sendFile(path.join(__dirname, '../views/adminPanel.html'));
 });
@@ -146,175 +183,246 @@ app.get('/client', (req, res) => {
   res.sendFile(path.join(__dirname, '../views/clientPanel.html'));
 });
 
+// ================== GET DISPLAYS (Filtered by adminId) ==================
 app.get('/displays', (req, res) => {
-  const displays = readJson(displayFile);
-  res.send(displays);
+  const adminId = parseInt(req.query.adminId, 10);
+  if (!adminId) {
+    return res.status(400).json({ message: 'Missing adminId query parameter.' });
+  }
+  const allDisplays = readJson(displayFile);
+  const displays = allDisplays.filter((d) => d.ownerId === adminId);
+  res.json(displays);
 });
 
+// ================== GET CLIENTS (Filtered by adminId) ==================
 app.get('/clients', (req, res) => {
-  const clients = readJson(clientFile);
-  res.send(clients);
+  const adminId = parseInt(req.query.adminId, 10);
+  if (!adminId) {
+    return res.status(400).json({ message: 'Missing adminId query parameter.' });
+  }
+  const allClients = readJson(clientFile);
+  const clients = allClients.filter((c) => c.ownerId === adminId);
+  res.json(clients);
 });
 
+// ================== CREATE DISPLAY ==================
 app.post('/create-display', (req, res) => {
-  const { name, location, resolution } = req.body;
-  const displays = readJson(displayFile);
-  const newDisplay = { id: Date.now(), name, location, resolution };
-  displays.push(newDisplay);
-  writeJson(displayFile, displays);
-  res.status(201).send(newDisplay);
+  const { adminId, name, location, resolution } = req.body;
+  if (!adminId || !name || !location || !resolution) {
+    return res
+      .status(400)
+      .json({ message: 'adminId, name, location, and resolution are required.' });
+  }
+
+  const allDisplays = readJson(displayFile);
+  const newDisplay = {
+    id: Date.now(),
+    ownerId: adminId,
+    name,
+    location,
+    resolution,
+  };
+  allDisplays.push(newDisplay);
+  writeJson(displayFile, allDisplays);
+
+  return res.status(201).json(newDisplay);
 });
 
+// ================== CREATE USER (CLIENT) ==================
 app.post('/create-user', (req, res) => {
-  const { name, email, password, displayIds } = req.body;
+  const { adminId, name, password, displayIds } = req.body;
+  if (!adminId || !name || !password) {
+    return res.status(400).json({ message: 'adminId, name, password are required.' });
+  }
 
-  const clients = readJson(clientFile);
-  const displays = readJson(displayFile);
+  const allDisplays = readJson(displayFile);
+  // Only assign displays belonging to this admin
+  const assignedDisplays = Array.isArray(displayIds)
+    ? allDisplays.filter((d) => displayIds.includes(d.id) && d.ownerId === adminId)
+    : [];
 
-  const assignedDisplays = displays.filter((display) => displayIds.includes(display.id));
-
+  const allClients = readJson(clientFile);
   const newClient = {
     id: Date.now(),
+    ownerId: adminId, // track the admin who created this user
     name,
-    email,
     password,
     displays: assignedDisplays,
-    videos: [], // Initialize videos array
+    videos: [],
   };
+  allClients.push(newClient);
+  writeJson(clientFile, allClients);
 
-  clients.push(newClient);
-  writeJson(clientFile, clients);
-
-  res.status(201).send(newClient);
+  return res.status(201).json(newClient);
 });
 
-// API: Upload Video
-app.get('/client/displays', (req, res) => {
-  const { clientId } = req.query;
-
-  if (!clientId) {
-    return res.status(400).send({ message: 'Client ID is required in the query string.' });
-  }
-
-  const clients = readJson(clientFile);
-  const client = clients.find((c) => c.id === Number(clientId));
-
-  if (!client) {
-    return res.status(404).send({ message: `Client with ID ${clientId} not found.` });
-  }
-
-  return res.status(200).send(client.displays);
-});
-
+// ================== EDIT DISPLAY ==================
 app.post('/edit-display', (req, res) => {
-  const { id, name, location, resolution } = req.body;
-
-  if (!id || !name || !location || !resolution) {
-    return res.status(400).send({ message: 'All fields are required.' });
+  const { adminId, id, name, location, resolution } = req.body;
+  if (!adminId || !id || !name || !location || !resolution) {
+    return res
+      .status(400)
+      .json({ message: 'adminId, id, name, location, and resolution are required.' });
   }
 
-  const displays = readJson(displayFile);
-  const display = displays.find((d) => d.id === Number(id));
-
-  if (!display) {
-    return res.status(404).send({ message: 'Display not found.' });
-  }
-
-  // Update display details
-  display.name = name;
-  display.location = location;
-  display.resolution = resolution;
-
-  writeJson(displayFile, displays);
-  res.status(200).send({ message: 'Display updated successfully.' });
-});
-
-// Delete Display
-app.delete('/delete-display/:id', (req, res) => {
-  const { id } = req.params;
-
-  const displays = readJson(displayFile);
-  const displayIndex = displays.findIndex((d) => d.id === Number(id));
-
+  const allDisplays = readJson(displayFile);
+  const displayIndex = allDisplays.findIndex((d) => d.id === Number(id) && d.ownerId === adminId);
   if (displayIndex === -1) {
-    return res.status(404).send({ message: 'Display not found.' });
+    return res.status(404).json({ message: 'Display not found or you are not the owner.' });
   }
 
-  // Remove display from the list
-  const [deletedDisplay] = displays.splice(displayIndex, 1);
-  writeJson(displayFile, displays);
+  // Update display
+  allDisplays[displayIndex].name = name;
+  allDisplays[displayIndex].location = location;
+  allDisplays[displayIndex].resolution = resolution;
 
-  // Remove the display from all clients
-  const clients = readJson(clientFile);
-  clients.forEach((client) => {
-    client.displays = client.displays.filter((d) => d.id !== Number(id));
-  });
-  writeJson(clientFile, clients);
-
-  res.status(200).send({ message: 'Display deleted successfully.', deletedDisplay });
+  writeJson(displayFile, allDisplays);
+  return res.status(200).json({ message: 'Display updated successfully.' });
 });
 
+// ================== DELETE DISPLAY ==================
+// We pass both adminId and displayId in the route to check ownership
+app.delete('/delete-display/:adminId/:displayId', (req, res) => {
+  const adminId = parseInt(req.params.adminId, 10);
+  const displayId = parseInt(req.params.displayId, 10);
+
+  const allDisplays = readJson(displayFile);
+  const displayIndex = allDisplays.findIndex(
+    (d) => d.id === displayId && d.ownerId === adminId
+  );
+  if (displayIndex === -1) {
+    return res.status(404).json({ message: 'Display not found or not owned by you.' });
+  }
+
+  const [deleted] = allDisplays.splice(displayIndex, 1);
+  writeJson(displayFile, allDisplays);
+
+  // Remove this display from any clients that have it
+  const allClients = readJson(clientFile);
+  allClients.forEach((c) => {
+    c.displays = c.displays.filter((d) => d.id !== displayId);
+  });
+  writeJson(clientFile, allClients);
+
+  return res.status(200).json({ message: 'Display deleted.', deletedDisplay: deleted });
+});
+
+// ================== GET USER DISPLAYS ==================
+// (For loading assigned displays in the UI)
+app.get('/user-displays/:id', (req, res) => {
+  const userId = parseInt(req.params.id, 10);
+  const allClients = readJson(clientFile);
+  const user = allClients.find((c) => c.id === userId);
+  if (!user) {
+    return res.status(404).json({ message: 'User not found' });
+  }
+  return res.json(user.displays || []);
+});
+
+// ================== EDIT USER (CLIENT) ==================
+app.post('/edit-user', (req, res) => {
+  const { adminId, id, name, password, displayIds } = req.body;
+  if (!adminId || !id || !name || !password || !Array.isArray(displayIds)) {
+    return res.status(400).json({
+      message: 'adminId, id, name, password, and displayIds are required.',
+    });
+  }
+
+  const allClients = readJson(clientFile);
+  const clientIndex = allClients.findIndex(
+    (c) => c.id === Number(id) && c.ownerId === adminId
+  );
+  if (clientIndex === -1) {
+    return res.status(404).json({ message: 'User not found or not owned by you.' });
+  }
+
+  const oldUser = allClients[clientIndex];
+  const oldVideos = oldUser.videos || [];
+  const oldDisplays = oldUser.displays || [];
+
+  // Filter only this admin's displays
+  const allDisplays = readJson(displayFile).filter((d) => d.ownerId === adminId);
+
+  // Reassign displays, preserving any videoLink
+  const assignedDisplays = allDisplays
+    .filter((d) => displayIds.includes(d.id))
+    .map((newDisplay) => {
+      const matchingOld = oldDisplays.find((od) => od.id === newDisplay.id);
+      return matchingOld
+        ? { ...newDisplay, videoLink: matchingOld.videoLink }
+        : { ...newDisplay };
+    });
+
+  // Update user fields
+  oldUser.name = name;
+  oldUser.password = password;
+  oldUser.displays = assignedDisplays;
+  oldUser.videos = oldVideos; // keep existing videos
+
+  allClients[clientIndex] = oldUser;
+  writeJson(clientFile, allClients);
+
+  return res.status(200).json({ message: 'User updated successfully.' });
+});
+
+// ================== DELETE USER (CLIENT) ==================
+app.delete('/delete-user/:adminId/:userId', (req, res) => {
+  const adminId = parseInt(req.params.adminId, 10);
+  const userId = parseInt(req.params.userId, 10);
+
+  const allClients = readJson(clientFile);
+  const clientIndex = allClients.findIndex(
+    (c) => c.id === userId && c.ownerId === adminId
+  );
+  if (clientIndex === -1) {
+    return res.status(404).json({ message: 'User not found or not owned by you.' });
+  }
+
+  const [deletedUser] = allClients.splice(clientIndex, 1);
+  writeJson(clientFile, allClients);
+
+  return res.status(200).json({ message: 'User deleted successfully.', deletedUser });
+});
+
+// ================== CLIENT VIDEO UPLOAD & MANAGEMENT ==================
+
+// Example endpoint to get display content by clientId (unchanged except you may want to check ownership)
 app.get('/client/content', (req, res) => {
   const { clientId } = req.query;
 
-  // Check if clientId is provided
   if (!clientId) {
-    return res.status(400).send({ message: 'Client ID is required in the query string.' });
+    return res.status(400).json({ message: 'Client ID is required.' });
   }
-
-  // Read the client data from the JSON file
-  const clients = readJson(clientFile);
-
-  // Find the client by ID
-  const client = clients.find((c) => c.id === Number(clientId));
-
-  // If the client is not found, return a 404 error
+  const allClients = readJson(clientFile);
+  const client = allClients.find((c) => c.id === Number(clientId));
   if (!client) {
-    return res.status(404).send({ message: `Client with ID ${clientId} not found.` });
+    return res.status(404).json({ message: `Client ${clientId} not found.` });
   }
-
-  // Retrieve the content/videos for the client
-  const content = client.displays.map((display) => {
-    return {
-      id: display.id,
-      name: display.name,
-      resolution: display.resolution,
-      location: display.location,
-    };
-  });
-
-  return res.status(200).send(content);
+  // Return minimal info about assigned displays
+  const content = client.displays.map((d) => ({
+    id: d.id,
+    name: d.name,
+    resolution: d.resolution,
+    location: d.location,
+    videoLink: d.videoLink || null,
+  }));
+  return res.json(content);
 });
 
-app.get('/user-displays/:id', (req, res) => {
-  const userId = parseInt(req.params.id, 10);
-  const clients = readJson(clientFile);
-  const user = clients.find((c) => c.id === userId);
-
-  if (user) {
-    return res.status(200).send(user.displays);
-  }
-  return res.status(404).send({ message: 'User not found' });
-});
-
-const getUserVideoDirectory = (clientName) => `user/videos/${clientName}`;
-const getActiveVideoPath = (clientName, displayName) =>
-  `user/videos/${clientName}/${displayName}/active_video.mp4`;
-
-// Upload Video to S3 under the correct directory
+// Upload Video to S3 (unchanged except for your environment needs)
 app.post('/client/upload', upload.single('video'), async (req, res) => {
   try {
     const { clientId } = req.body;
-
     if (!req.file || !clientId) {
-      return res.status(400).send({ message: 'Video file and Client ID are required.' });
+      return res
+        .status(400)
+        .json({ message: 'Video file and Client ID are required.' });
     }
 
-    const clients = readJson(clientFile);
-    const client = clients.find((c) => c.id === Number(clientId));
-
+    const allClients = readJson(clientFile);
+    const client = allClients.find((c) => c.id === Number(clientId));
     if (!client) {
-      return res.status(404).send({ message: 'Client not found.' });
+      return res.status(404).json({ message: 'Client not found.' });
     }
 
     const clientName = client.name.replace(/\s+/g, '_');
@@ -334,221 +442,115 @@ app.post('/client/upload', upload.single('video'), async (req, res) => {
       client.videos = [];
     }
     client.videos.push(fileUrl);
-    writeJson(clientFile, clients);
+    writeJson(clientFile, allClients);
 
-    res.status(200).send({ message: 'Video uploaded successfully!', videoUrl: fileUrl });
+    res
+      .status(200)
+      .json({ message: 'Video uploaded successfully!', videoUrl: fileUrl });
   } catch (error) {
     console.error('Upload error:', error);
-    res.status(500).send({ message: 'Failed to upload video.', error: error.message });
+    res
+      .status(500)
+      .json({ message: 'Failed to upload video.', error: error.message });
   }
 });
 
 // Fetch Videos for a Client
 app.get('/client/videos', (req, res) => {
   const { clientId } = req.query;
-
   if (!clientId) {
-    return res.status(400).send({ message: 'Client ID is required.' });
+    return res.status(400).json({ message: 'Client ID is required.' });
   }
 
-  const clients = readJson(clientFile);
-  const client = clients.find((c) => c.id === Number(clientId));
-
+  const allClients = readJson(clientFile);
+  const client = allClients.find((c) => c.id === Number(clientId));
   if (!client) {
-    return res.status(404).send({ message: 'Client not found.' });
+    return res.status(404).json({ message: 'Client not found.' });
   }
-
-  // Return the list of video links
-  res.status(200).send(client.videos || []);
+  res.json(client.videos || []);
 });
-
-const makePublic = async (bucketName, key) => {
-  const params = {
-    Bucket: bucketName,
-    Key: key, // Directory or file to make public
-    ACL: 'public-read',
-  };
-
-  try {
-    await s3.putObjectAcl(params).promise();
-    console.log(`Successfully updated ACL for ${key}`);
-  } catch (error) {
-    console.error(`Error setting ACL for ${key}:`, error);
-  }
-};
 
 // Publish Video to a Display
 app.post('/client/publish', async (req, res) => {
   const { clientId, displays, videoUrl } = req.body;
-
   if (!clientId || !displays || !videoUrl) {
-    return res.status(400).send({ message: 'Client ID, displays, and video URL are required.' });
+    return res
+      .status(400)
+      .json({ message: 'Client ID, displays, and video URL are required.' });
   }
 
-  const clients = readJson(clientFile);
-  const client = clients.find((c) => c.id === Number(clientId));
-
+  const allClients = readJson(clientFile);
+  const client = allClients.find((c) => c.id === Number(clientId));
   if (!client) {
-    return res.status(404).send({ message: 'Client not found.' });
+    return res.status(404).json({ message: 'Client not found.' });
   }
 
   try {
     console.log(`Original Video URL: ${videoUrl}`);
-
-    // Ensure the videoUrl includes the protocol
     let formattedVideoUrl = videoUrl;
     if (!/^https?:\/\//i.test(videoUrl)) {
       formattedVideoUrl = `https://${videoUrl}`;
-      console.warn(`Video URL missing protocol. Formatted Video URL: ${formattedVideoUrl}`);
+      console.warn(`Video URL missing protocol. Using: ${formattedVideoUrl}`);
     }
 
-    // Parse the videoUrl to extract the path after the base URL
-    const url = new URL(formattedVideoUrl);
-    const baseUrl = new URL(HETZNER_BASE_URL);
-    let pathAfterBase = url.pathname;
+    const urlObj = new URL(formattedVideoUrl);
+    const baseUrlObj = new URL(HETZNER_BASE_URL);
+    let pathAfterBase = urlObj.pathname;
 
-    // Remove the base path from the video path to avoid duplication
-    if (pathAfterBase.startsWith(baseUrl.pathname)) {
-      pathAfterBase = pathAfterBase.substring(baseUrl.pathname.length);
+    // Remove the base path if it's repeated
+    if (pathAfterBase.startsWith(baseUrlObj.pathname)) {
+      pathAfterBase = pathAfterBase.substring(baseUrlObj.pathname.length);
     } else {
-      // Handle cases where the path doesn't start with basePath
-      // Adjust as necessary based on your actual URL structure
-      // For example, if your bucket is part of the hostname:
-      // https://nbg1.your-objectstorage.com/belgrand-player/user/videos/...
-      pathAfterBase = pathAfterBase.replace(/^\/+/, ''); // Remove leading slashes
+      pathAfterBase = pathAfterBase.replace(/^\/+/, '');
     }
 
-    console.log(`Path after base URL: ${pathAfterBase}`);
-
-    // Construct the correct Hetzner-hosted video URL
     const hetznerVideoUrl = `${HETZNER_BASE_URL}${pathAfterBase}`;
     console.log(`Hetzner Video URL: ${hetznerVideoUrl}`);
 
-    // Assign the video link to each selected display
+    // Assign the videoLink to each selected display
     for (const displayId of displays) {
-      const display = client.displays.find((d) => d.id === Number(displayId));
-      if (display) {
-        console.log(`Assigning Video to Display ID ${displayId}: ${hetznerVideoUrl}`);
-        display.videoLink = hetznerVideoUrl;
+      const disp = client.displays.find((d) => d.id === Number(displayId));
+      if (disp) {
+        disp.videoLink = hetznerVideoUrl;
       }
     }
 
-    writeJson(clientFile, clients); // Save updates to clients.json
-    res.status(200).send({ message: 'Video successfully published to displays.' });
-  } catch (error) {
-    console.error('Error publishing video:', error);
-    res.status(500).send({ message: 'Failed to publish video.', error: error.message });
+    writeJson(clientFile, allClients);
+    res.status(200).json({ message: 'Video successfully published to displays.' });
+  } catch (err) {
+    console.error('Error publishing video:', err);
+    res
+      .status(500)
+      .json({ message: 'Failed to publish video.', error: err.message });
   }
 });
 
-// Fetch Current Video for a Display and Redirect
+// Get Current Video for a Display (then redirect)
 app.get('/client/getCurrentVideo/:clientId/:displayId', async (req, res) => {
   const { clientId, displayId } = req.params;
-
-  // Read the clients file
-  const clients = readJson(clientFile);
-  const client = clients.find((c) => c.id === Number(clientId));
-
+  const allClients = readJson(clientFile);
+  const client = allClients.find((c) => c.id === Number(clientId));
   if (!client) {
-    return res.status(404).send({ message: 'Client not found.' });
+    return res.status(404).json({ message: 'Client not found.' });
   }
 
-  // Find the specific display
   const display = client.displays.find((d) => d.id === Number(displayId));
-
   if (!display || !display.videoLink) {
-    return res.status(404).send({ message: 'Video for the specified display not found.' });
+    return res.status(404).json({ message: 'Video for that display not found.' });
   }
 
   try {
     const videoUrl = display.videoLink;
-
-    console.log(`Client ID: ${clientId}`);
-    console.log(`Display ID: ${displayId}`);
-    console.log(`Video URL: ${videoUrl}`);
-
-    // Redirect the client to the Hetzner-hosted video URL
+    console.log(`Redirecting to video: ${videoUrl}`);
     res.status(302).redirect(videoUrl);
   } catch (error) {
     console.error('Error fetching video:', error);
-    res.status(500).send({ message: 'Failed to serve video.', error: error.message });
+    res.status(500).json({ message: 'Failed to serve video.', error: error.message });
   }
-});
-
-// **New Endpoint: Edit User**
-app.post('/edit-user', (req, res) => {
-  const { id, name, email, password, displayIds } = req.body;
-
-  if (!id || !name || !email || !password || !Array.isArray(displayIds)) {
-    return res
-      .status(400)
-      .send({ message: 'All fields are required and displayIds must be an array.' });
-  }
-
-  const clients = readJson(clientFile);
-  const clientIndex = clients.findIndex((c) => c.id === Number(id));
-
-  if (clientIndex === -1) {
-    return res.status(404).send({ message: 'User not found.' });
-  }
-
-  // Grab the old user object
-  const oldUser = clients[clientIndex];
-
-  // Preserve the old videos array
-  const oldVideos = oldUser.videos || [];
-
-  // Get the original displays assigned to the user (including videoLink)
-  const oldDisplays = oldUser.displays || [];
-
-  // Pull the full list of displays from 'displays.json'
-  const allDisplays = readJson(displayFile);
-
-  // Build a new array of "assignedDisplays" based on the incoming displayIds
-  // but preserve any existing videoLink from the oldDisplays if it exists
-  const assignedDisplays = allDisplays
-    .filter((display) => displayIds.includes(display.id))
-    .map((newDisplay) => {
-      // If the user already had this display, preserve its videoLink
-      const matchingOldDisplay = oldDisplays.find((d) => d.id === newDisplay.id);
-
-      return matchingOldDisplay
-        ? { ...newDisplay, videoLink: matchingOldDisplay.videoLink }
-        : { ...newDisplay }; // no videoLink if it's a brand-new assignment
-    });
-
-  // Now update the user fields
-  oldUser.name = name;
-  oldUser.email = email;
-  oldUser.password = password;
-  oldUser.displays = assignedDisplays;
-  oldUser.videos = oldVideos; // Keep the old videos array
-
-  // Save the updated user back to the clients array
-  clients[clientIndex] = oldUser;
-  writeJson(clientFile, clients);
-
-  res.status(200).send({ message: 'User updated successfully.' });
-});
-
-// **New Endpoint: Delete User**
-app.delete('/delete-user/:id', (req, res) => {
-  const { id } = req.params;
-
-  const clients = readJson(clientFile);
-  const clientIndex = clients.findIndex((c) => c.id === Number(id));
-
-  if (clientIndex === -1) {
-    return res.status(404).send({ message: 'User not found.' });
-  }
-
-  // Remove user from the list
-  const [deletedUser] = clients.splice(clientIndex, 1);
-  writeJson(clientFile, clients);
-
-  res.status(200).send({ message: 'User deleted successfully.', deletedUser });
 });
 
 // Start the server
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+app.listen(PORT, () => {
+  console.log(`Server running on http://localhost:${PORT}`);
+});
