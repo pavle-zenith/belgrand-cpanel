@@ -96,7 +96,6 @@
         font-weight: bold;
       }
       .form-field input[type="text"],
-      .form-field input[type="email"],
       .form-field input[type="password"] {
         padding: 8px;
         border: 1px solid #ddd;
@@ -209,10 +208,7 @@
           <label for="password">Password</label>
           <input type="password" id="password" placeholder="Enter password" />
         </div>
-        <div class="form-field">
-          <label for="email">Email</label>
-          <input type="email" id="email" placeholder="Enter email" />
-        </div>
+        <!-- Removed email -->
         <div class="form-field">
           <label for="displays">Assign Displays</label>
           <div id="displayCheckboxes"></div>
@@ -275,7 +271,7 @@
       </div>
     </div>
 
-    <!-- New Modal: Edit User -->
+    <!-- Edit User Modal (No Email) -->
     <div class="modal" id="editUserModal">
       <div class="modal-content">
         <div class="modal-header">Edit User</div>
@@ -287,10 +283,7 @@
           <label for="edit-user-password">Password</label>
           <input type="password" id="edit-user-password" placeholder="Enter password" />
         </div>
-        <div class="form-field">
-          <label for="edit-user-email">Email</label>
-          <input type="email" id="edit-user-email" placeholder="Enter email" />
-        </div>
+        <!-- Email removed -->
         <div class="form-field">
           <label for="edit-user-displays">Assign Displays</label>
           <div id="editUserDisplayCheckboxes"></div>
@@ -306,6 +299,14 @@
     <footer>Belgrand</footer>
 
     <script>
+      // ----- If adminId not found in localStorage, redirect to login
+      const adminId = localStorage.getItem("adminId");
+      if (!adminId) {
+        alert("No Admin ID found. Please log in first.");
+        window.location.href = "/";
+      }
+
+      // ----- Display modal references
       const editDisplayModal = document.getElementById("editDisplayModal");
       const editDisplayName = document.getElementById("edit-display-name");
       const editDisplayLocation = document.getElementById("edit-location");
@@ -317,51 +318,68 @@
       let selectedDisplayId = null;
       let selectedUserId = null;
 
-      // **New Elements for Edit User Modal**
+      // ----- Edit User modal references
       const editUserModal = document.getElementById("editUserModal");
       const editUsername = document.getElementById("edit-username");
       const editUserPassword = document.getElementById("edit-user-password");
-      const editUserEmail = document.getElementById("edit-user-email");
       const editUserDisplayCheckboxes = document.getElementById("editUserDisplayCheckboxes");
       const saveUserChanges = document.getElementById("saveUserChanges");
       const deleteUserButton = document.getElementById("deleteUserButton");
       const closeUserModal = document.getElementById("closeUserModal");
 
-      // Load Users
+      // ===================== LOAD USERS =====================
       const loadUsers = async () => {
-        const response = await fetch("/clients");
+        // We pass adminId as query param to filter
+        const response = await fetch(`/clients?adminId=${adminId}`);
+        if (!response.ok) {
+          const err = await response.json();
+          alert(err.message || "Failed to load users.");
+          return;
+        }
         const users = await response.json();
+
         const userListPanel = document.getElementById("userListPanel");
         userListPanel.innerHTML = "<h3>User List</h3>";
+
         users.forEach((user) => {
           const div = document.createElement("div");
           div.className = "list-item";
-          div.innerHTML = `<span><i class="material-icons">person</i>${user.name}</span>
-                          <div>
-                            <button class="button" onclick="openEditUserModal(${user.id})">Edit User</button>
-                          </div>`;
+          div.innerHTML = `
+            <span><i class="material-icons">person</i>${user.name}</span>
+            <div>
+              <button class="button" onclick="openEditUserModal(${user.id})">Edit User</button>
+            </div>`;
           div.dataset.userId = user.id;
+
           div.addEventListener("click", () => {
+            // highlight selection
             document
               .querySelectorAll("#userListPanel .list-item")
               .forEach((item) => item.classList.remove("selected"));
             div.classList.add("selected");
+
             selectedUserId = user.id;
             loadUserDisplays(user.id);
           });
+
           userListPanel.appendChild(div);
         });
       };
 
-      // Load User Displays and Display Stream Links
+      // ===================== LOAD USER DISPLAYS =====================
       const loadUserDisplays = async (userId) => {
         const response = await fetch(`/user-displays/${userId}`);
+        if (!response.ok) {
+          const err = await response.json();
+          alert(err.message || "Failed to load user displays.");
+          return;
+        }
         const displays = await response.json();
+
         streamLinksPanel.innerHTML = ""; // Clear current links
 
         if (displays.length === 0) {
-          streamLinksPanel.innerHTML =
-            "<p>No displays assigned to this user.</p>";
+          streamLinksPanel.innerHTML = "<p>No displays assigned to this user.</p>";
         } else {
           // Create a table to display stream links
           const table = document.createElement("table");
@@ -374,8 +392,7 @@
                 <th>Actions</th>
               </tr>
             </thead>
-            <tbody>
-            </tbody>
+            <tbody></tbody>
           `;
           const tbody = table.querySelector("tbody");
 
@@ -395,14 +412,14 @@
               link.href = getCurrentVideoUrl;
               link.textContent = "Stream Link";
               link.className = "stream-link";
-              link.target = "_blank"; // Opens in a new tab
+              link.target = "_blank"; // Open in a new tab
               linkTd.appendChild(link);
             } else {
               linkTd.textContent = "No video published.";
             }
             tr.appendChild(linkTd);
 
-            // Actions (Copy Link Button)
+            // Actions
             const actionsTd = document.createElement("td");
             if (display.videoLink) {
               const copyButton = document.createElement("button");
@@ -428,12 +445,20 @@
         }
       };
 
-      // Load Displays for Assign Displays Section
+      // ===================== LOAD DISPLAY CHECKBOXES (CREATE USER) =====================
       const loadDisplayCheckboxes = async () => {
-        const response = await fetch("/displays");
+        // Filter by this admin's displays
+        const response = await fetch(`/displays?adminId=${adminId}`);
+        if (!response.ok) {
+          const err = await response.json();
+          alert(err.message || "Failed to load displays.");
+          return;
+        }
         const displays = await response.json();
+
         const displayCheckboxes = document.getElementById("displayCheckboxes");
         displayCheckboxes.innerHTML = ""; // Clear existing checkboxes
+
         displays.forEach((display) => {
           const div = document.createElement("div");
           div.className = "form-field displaysCheckboxesFix";
@@ -445,11 +470,19 @@
         });
       };
 
-      // Load Displays for Edit User Modal
+      // ===================== LOAD DISPLAY CHECKBOXES (EDIT USER MODAL) =====================
       const loadEditUserDisplayCheckboxes = async () => {
-        const response = await fetch("/displays");
+        // Filter by this admin's displays
+        const response = await fetch(`/displays?adminId=${adminId}`);
+        if (!response.ok) {
+          const err = await response.json();
+          alert(err.message || "Failed to load displays.");
+          return;
+        }
         const displays = await response.json();
+
         editUserDisplayCheckboxes.innerHTML = ""; // Clear existing checkboxes
+
         displays.forEach((display) => {
           const div = document.createElement("div");
           div.className = "form-field displaysCheckboxesFix";
@@ -461,10 +494,16 @@
         });
       };
 
-      // Load Displays
+      // ===================== LOAD DISPLAYS (LEFT PANEL) =====================
       const loadDisplays = async () => {
-        const response = await fetch("/displays");
+        const response = await fetch(`/displays?adminId=${adminId}`);
+        if (!response.ok) {
+          const err = await response.json();
+          alert(err.message || "Failed to load displays.");
+          return;
+        }
         const displays = await response.json();
+
         const displayListPanel = document.getElementById("displayListPanel");
         const listContainer = displayListPanel.querySelector(".list-container");
         listContainer.innerHTML = ""; // Clear the list
@@ -480,7 +519,7 @@
         });
       };
 
-      // Create Display
+      // ===================== CREATE DISPLAY =====================
       document
         .getElementById("createDisplayBtn")
         .addEventListener("click", async () => {
@@ -496,7 +535,12 @@
           const response = await fetch("/create-display", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ name, location, resolution }),
+            body: JSON.stringify({
+              adminId: parseInt(adminId, 10),
+              name,
+              location,
+              resolution,
+            }),
           });
 
           if (response.ok) {
@@ -509,7 +553,7 @@
           }
         });
 
-      // Refresh Button Event Listener
+      // ===================== REFRESH STREAM LINKS =====================
       document.getElementById("refreshBtn").addEventListener("click", () => {
         if (selectedUserId) {
           loadUserDisplays(selectedUserId);
@@ -518,26 +562,31 @@
         }
       });
 
-      // Create User
+      // ===================== CREATE USER =====================
       document
         .getElementById("createUserBtn")
         .addEventListener("click", async () => {
           const name = document.getElementById("username").value.trim();
           const password = document.getElementById("password").value.trim();
-          const email = document.getElementById("email").value.trim();
+          // We removed 'email'
           const displayIds = Array.from(
             document.querySelectorAll("#displayCheckboxes input[type='checkbox']:checked")
           ).map((checkbox) => parseInt(checkbox.value, 10));
 
-          if (!name || !password || !email) {
-            alert("Please fill in all user fields.");
+          if (!name || !password) {
+            alert("Please fill in all required fields (username, password).");
             return;
           }
 
           const response = await fetch("/create-user", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ name, email, password, displayIds }),
+            body: JSON.stringify({
+              adminId: parseInt(adminId, 10),
+              name,
+              password,
+              displayIds,
+            }),
           });
 
           if (response.ok) {
@@ -550,7 +599,7 @@
           }
         });
 
-      // Open Edit Display Modal
+      // ===================== OPEN EDIT DISPLAY MODAL =====================
       window.openEditDisplayModal = (id, name, location, resolution) => {
         selectedDisplayId = id;
         editDisplayName.value = name;
@@ -559,43 +608,42 @@
         editDisplayModal.style.display = "flex";
       };
 
-      // Save Changes to Display
-      document
-        .getElementById("saveDisplayChanges")
-        .addEventListener("click", async () => {
-          const name = document.getElementById("edit-display-name").value.trim();
-          const location = document.getElementById("edit-location").value.trim();
-          const resolution = document.getElementById("edit-resolution").value.trim();
+      // ===================== SAVE DISPLAY CHANGES =====================
+      saveDisplayChanges.addEventListener("click", async () => {
+        const name = editDisplayName.value.trim();
+        const location = editDisplayLocation.value.trim();
+        const resolution = editDisplayResolution.value.trim();
 
-          if (!name || !location || !resolution) {
-            alert("Please fill in all display fields.");
-            return;
-          }
+        if (!name || !location || !resolution) {
+          alert("Please fill in all display fields.");
+          return;
+        }
 
-          const response = await fetch("/edit-display", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              id: selectedDisplayId,
-              name,
-              location,
-              resolution,
-            }),
-          });
-
-          if (response.ok) {
-            alert("Display updated successfully.");
-            editDisplayModal.style.display = "none";
-            await loadUsers();
-            await loadDisplayCheckboxes();
-            await loadDisplays();
-          } else {
-            const error = await response.json();
-            alert("Failed to update display: " + error.message);
-          }
+        const response = await fetch("/edit-display", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            adminId: parseInt(adminId, 10),
+            id: selectedDisplayId,
+            name,
+            location,
+            resolution,
+          }),
         });
 
-      // Delete Display
+        if (response.ok) {
+          alert("Display updated successfully.");
+          editDisplayModal.style.display = "none";
+          await loadUsers();
+          await loadDisplayCheckboxes();
+          await loadDisplays();
+        } else {
+          const error = await response.json();
+          alert("Failed to update display: " + error.message);
+        }
+      });
+
+      // ===================== DELETE DISPLAY =====================
       deleteDisplayButton.addEventListener("click", async () => {
         if (!selectedDisplayId) {
           alert("No display selected.");
@@ -605,7 +653,7 @@
         const confirmDelete = confirm("Are you sure you want to delete this display?");
         if (!confirmDelete) return;
 
-        const response = await fetch(`/delete-display/${selectedDisplayId}`, {
+        const response = await fetch(`/delete-display/${adminId}/${selectedDisplayId}`, {
           method: "DELETE",
         });
 
@@ -621,12 +669,17 @@
         }
       });
 
-      // **New Function: Open Edit User Modal**
+      // ===================== OPEN EDIT USER MODAL =====================
       window.openEditUserModal = async (userId) => {
         selectedUserId = userId;
 
-        // Fetch user data
-        const response = await fetch("/clients");
+        // Re-fetch clients for this admin to get the user data
+        const response = await fetch(`/clients?adminId=${adminId}`);
+        if (!response.ok) {
+          const err = await response.json();
+          alert(err.message || "Failed to load clients.");
+          return;
+        }
         const users = await response.json();
         const user = users.find((u) => u.id === userId);
 
@@ -638,12 +691,11 @@
         // Populate modal fields
         editUsername.value = user.name;
         editUserPassword.value = user.password;
-        editUserEmail.value = user.email;
 
         // Load display checkboxes
         await loadEditUserDisplayCheckboxes();
 
-        // Assign displays
+        // Mark which displays are assigned
         const checkboxes = editUserDisplayCheckboxes.querySelectorAll("input[type='checkbox']");
         checkboxes.forEach((checkbox) => {
           if (user.displays.some((d) => d.id === Number(checkbox.value))) {
@@ -657,20 +709,18 @@
         editUserModal.style.display = "flex";
       };
 
-      // **New Function: Save Changes to User**
+      // ===================== SAVE USER CHANGES =====================
       saveUserChanges.addEventListener("click", async () => {
         const name = editUsername.value.trim();
         const password = editUserPassword.value.trim();
-        const email = editUserEmail.value.trim();
         const displayIds = Array.from(
           editUserDisplayCheckboxes.querySelectorAll("input[type='checkbox']:checked")
         ).map((checkbox) => parseInt(checkbox.value, 10));
 
-        if (!name || !password || !email) {
-          alert("Please fill in all user fields.");
+        if (!name || !password) {
+          alert("Please fill in all required fields (username, password).");
           return;
         }
-
         if (displayIds.length === 0) {
           alert("Please assign at least one display to the user.");
           return;
@@ -679,7 +729,13 @@
         const response = await fetch("/edit-user", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ id: selectedUserId, name, email, password, displayIds }),
+          body: JSON.stringify({
+            adminId: parseInt(adminId, 10),
+            id: selectedUserId,
+            name,
+            password,
+            displayIds,
+          }),
         });
 
         if (response.ok) {
@@ -693,7 +749,7 @@
         }
       });
 
-      // **New Function: Delete User**
+      // ===================== DELETE USER =====================
       deleteUserButton.addEventListener("click", async () => {
         if (!selectedUserId) {
           alert("No user selected.");
@@ -703,7 +759,7 @@
         const confirmDelete = confirm("Are you sure you want to delete this user?");
         if (!confirmDelete) return;
 
-        const response = await fetch(`/delete-user/${selectedUserId}`, {
+        const response = await fetch(`/delete-user/${adminId}/${selectedUserId}`, {
           method: "DELETE",
         });
 
@@ -718,30 +774,30 @@
         }
       });
 
-      // **New Function: Close User Modal**
+      // ===================== CLOSE USER MODAL =====================
       closeUserModal.addEventListener("click", () => {
         editUserModal.style.display = "none";
       });
 
-      // Close Display Modal when clicking outside the modal content
-      window.onclick = function(event) {
-        if (event.target == editDisplayModal) {
+      // ===================== CLOSE MODALS ON BACKDROP CLICK =====================
+      window.onclick = function (event) {
+        if (event.target === editDisplayModal) {
           editDisplayModal.style.display = "none";
         }
-        if (event.target == editUserModal) {
+        if (event.target === editUserModal) {
           editUserModal.style.display = "none";
         }
       };
 
-      // Close Display Modal with Escape key
-      window.onkeydown = function(event) {
+      // ===================== CLOSE MODALS WITH ESC =====================
+      window.onkeydown = function (event) {
         if (event.key === "Escape") {
           editDisplayModal.style.display = "none";
           editUserModal.style.display = "none";
         }
       };
 
-      // Initial Load
+      // ===================== INITIAL LOAD =====================
       loadUsers();
       loadDisplays();
       loadDisplayCheckboxes();
