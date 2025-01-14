@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Client Panel</title>
   <link
     href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap"
@@ -25,10 +25,24 @@
     header {
       background-color: #1976d2;
       color: white;
-      text-align: center;
       padding: 20px;
       font-size: 24px;
       font-weight: bold;
+      position: relative; /* za pozicioniranje logout dugmeta */
+    }
+    .logout-btn {
+      position: absolute;
+      right: 20px;
+      top: 20px;
+      background-color: #ff5722;
+      border: none;
+      color: #fff;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .logout-btn:hover {
+      background-color: #e64a19;
     }
     .container {
       display: flex;
@@ -43,11 +57,10 @@
       background: #fff;
       border-radius: 8px;
       padding: 20px;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
       flex: 1;
       min-width: 300px;
       max-width: 400px;
-      height: auto;
       display: flex;
       flex-direction: column;
       text-align: left;
@@ -74,10 +87,6 @@
     .form-field label {
       margin-bottom: 4px;
       font-weight: bold;
-    }
-    span {
-      overflow: hidden;
-      text-overflow: ellipsis; 
     }
     .form-field input[type="file"] {
       padding: 8px;
@@ -107,7 +116,10 @@
   </style>
 </head>
 <body>
-  <header>CONTROL PANEL</header>
+  <header>
+    CONTROL PANEL
+    <button class="logout-btn" id="logoutBtn">Logout</button>
+  </header>
   <div class="container">
     <!-- Upload Panel -->
     <div class="panel">
@@ -158,12 +170,20 @@
     const displayCheckboxes = document.getElementById("displayCheckboxes");
     const displayList = document.getElementById("displayList");
 
+    // Uzimamo clientId iz localStorage
     const clientId = localStorage.getItem("clientId");
     if (!clientId) {
       alert("Client ID is missing.");
     }
 
-    // Handle Upload Button Click
+    // Logout
+    document.getElementById("logoutBtn").addEventListener("click", () => {
+      // obriši clientId i preusmeri na login (ili '/')
+      localStorage.removeItem("clientId");
+      window.location.href = "/";
+    });
+
+    // ========== UPLOAD VIDEO ==========
     document.getElementById("uploadBtn").addEventListener("click", async () => {
       const fileInput = document.getElementById("videoUpload");
       const file = fileInput.files[0];
@@ -191,53 +211,87 @@
       }
     });
 
-    // Load User Videos into Dropdown
+    // ========== LOAD USER VIDEOS ==========
     const loadUserVideos = async () => {
-  const response = await fetch(`/client/videos?clientId=${clientId}`);
-  if (!response.ok) {
-    console.error('Failed to load videos.');
-    return;
-  }
+      const response = await fetch(`/client/videos?clientId=${clientId}`);
+      if (!response.ok) {
+        console.error('Failed to load videos.');
+        return;
+      }
 
-  const videos = await response.json();
-  const contentList = document.getElementById('contentList');
-  const videoDropdown = document.getElementById('videoDropdown');
+      const videos = await response.json();
 
-  // Populate the content list
-  contentList.innerHTML = videos.length
-    ? videos
-        .map(
-          (video) =>
-            `<div class="list-item">
-              <span>${video.split('/').pop()}</span>
-              <button class="button copy-button" data-link="${video}">Copy Link</button>
-            </div>`
-        )
-        .join('')
-    : '<p>No videos uploaded yet.</p>';
+      // Prikaži listu videa
+      contentList.innerHTML = videos.length
+        ? videos
+            .map((video) => {
+              let fileName = video.split('/').pop() || "";
+              // Ukloni prefiks (timestamp_)
+              fileName = fileName.replace(/^\d+_/, '');
+              // Skrati ako je duže od 10 karaktera
+              if (fileName.length > 10) {
+                fileName = fileName.substring(0, 10) + "...";
+              }
+              return `
+                <div class="list-item">
+                  <span>${fileName}</span>
+                  <button class="button copy-button" data-link="${video}">Copy Link</button>
+                  <button class="button delete-button" data-video="${video}">Delete</button>
+                </div>
+              `;
+            })
+            .join('')
+        : '<p>No videos uploaded yet.</p>';
 
-  // Populate the dropdown
-  videoDropdown.innerHTML = '<option value="">Select a video</option>';
-  videos.forEach((video) => {
-    const option = document.createElement('option');
-    option.value = video;
-    option.textContent = video.split('/').pop(); // Extract file name
-    videoDropdown.appendChild(option);
-  });
-
-  // Add copy functionality to each button
-  const copyButtons = document.querySelectorAll('.copy-button');
-  copyButtons.forEach((button) => {
-    button.addEventListener('click', (event) => {
-      const videoLink = event.target.getAttribute('data-link');
-      navigator.clipboard.writeText(videoLink).then(() => {
-        alert('Video link copied to clipboard!');
+      // Popuni <select> spisak videa
+      videoDropdown.innerHTML = '<option value="">Select a video</option>';
+      videos.forEach((video) => {
+        const option = document.createElement('option');
+        option.value = video;
+        option.textContent = video.split('/').pop();
+        videoDropdown.appendChild(option);
       });
-    });
-  });
-};
 
-    // Handle Publish Button Click
+      // Copy link
+      const copyButtons = document.querySelectorAll('.copy-button');
+      copyButtons.forEach((button) => {
+        button.addEventListener('click', (event) => {
+          const videoLink = event.target.getAttribute('data-link');
+          navigator.clipboard.writeText(videoLink).then(() => {
+            alert('Video link copied to clipboard!');
+          });
+        });
+      });
+
+      // Delete video
+      const deleteButtons = document.querySelectorAll('.delete-button');
+      deleteButtons.forEach((button) => {
+        button.addEventListener('click', async (event) => {
+          const videoToDelete = event.target.getAttribute('data-video');
+          if (!confirm(`Are you sure you want to delete this video from content?`)) {
+            return;
+          }
+
+          const resp = await fetch('/client/deleteVideo', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              clientId,
+              videoUrl: videoToDelete,
+            }),
+          });
+
+          if (resp.ok) {
+            loadUserVideos();
+          } else {
+            const err = await resp.json();
+            alert('Failed to delete video: ' + err.message);
+          }
+        });
+      });
+    };
+
+    // ========== PUBLISH VIDEO ==========
     document.getElementById("publishBtn").addEventListener("click", async () => {
       const selectedDisplays = Array.from(
         document.querySelectorAll("#displayCheckboxes input[type='checkbox']:checked")
@@ -267,13 +321,15 @@
 
       if (response.ok) {
         alert("Video published successfully!");
+        // Nakon publisha, osveži listu displeja
+        loadDisplays();
       } else {
         const error = await response.json();
         alert(`Failed to publish video: ${error.message}`);
       }
     });
 
-    // Load Displays for the User
+    // ========== LOAD DISPLAYS ==========
     const loadDisplays = async () => {
       try {
         const response = await fetch(`/client/displays?clientId=${clientId}`);
@@ -283,19 +339,31 @@
 
         const displays = await response.json();
 
-        // Populate Displays Panel
         displayList.innerHTML = displays.length
           ? displays
-              .map(
-                (display) => `
-                <div class="list-item">
-                  <i class="material-icons">tv</i>${display.name} (${display.resolution})
-                </div>`
-              )
+              .map((display) => {
+                let videoName = "";
+                if (display.videoLink) {
+                  videoName = display.videoLink.split("/").pop() || "";
+                  // Ukloni prefiks
+                  videoName = videoName.replace(/^\d+_/, '');
+                  // Skrati ako je duže od 20 karaktera
+                  if (videoName.length > 20) {
+                    videoName = videoName.substring(0, 20) + "...";
+                  }
+                }
+                const videoLabel = videoName ? ` - ${videoName}` : "";
+                return `
+                  <div class="list-item">
+                    <i class="material-icons">tv</i>
+                    ${display.name} (${display.resolution})${videoLabel}
+                  </div>
+                `;
+              })
               .join("")
           : "<p>No displays available.</p>";
 
-        // Populate Display Insert Media Checkboxes
+        // Checkboxes
         displayCheckboxes.innerHTML = displays.length
           ? displays
               .map(
@@ -312,7 +380,7 @@
       }
     };
 
-    // Initial Load
+    // Inicijalno učitavanje
     loadDisplays();
     loadUserVideos();
   </script>
