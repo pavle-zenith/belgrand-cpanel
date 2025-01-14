@@ -180,7 +180,24 @@ app.get('/admin', (req, res) => {
 app.get('/client', (req, res) => {
   res.sendFile(path.join(__dirname, '../views/clientPanel.html'));
 });
+app.delete('/client/deleteVideo', (req, res) => {
+  const { clientId, videoUrl } = req.body;
+  if (!clientId || !videoUrl) {
+    return res.status(400).json({ message: 'clientId and videoUrl are required.' });
+  }
 
+  const allClients = readJson(clientFile);
+  const client = allClients.find((c) => c.id === Number(clientId));
+  if (!client) {
+    return res.status(404).json({ message: 'Client not found.' });
+  }
+
+  // Ukloni iz liste videa
+  client.videos = client.videos.filter((v) => v !== videoUrl);
+
+  writeJson(clientFile, allClients);
+  return res.status(200).json({ message: 'Video removed from content list.' });
+});
 // GET DISPLAYS (po adminId)
 app.get('/displays', (req, res) => {
   const adminId = parseInt(req.query.adminId, 10);
