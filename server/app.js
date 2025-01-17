@@ -32,6 +32,7 @@ app.use(
         "style-src": ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
         "script-src-attr": ["'unsafe-inline'"],
         "img-src": ["'self'", "data:"],
+        "img-src": ["'self'", "data:", "https://i.imgur.com"],
         "font-src": ["'self'", "https://fonts.gstatic.com"],
         "media-src": ["'self'", "blob:"],
       },
